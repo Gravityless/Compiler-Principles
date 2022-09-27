@@ -1,2 +1,2 @@
-191830173
-ya||9999
+int float intfloat
+strcut return if else while     whileifelse

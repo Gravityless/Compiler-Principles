@@ -18,42 +18,47 @@ AND &&
 OR \|\|
 DOT \.
 NOT !
-TYPE int|float
 LP \(
 RP \)
 LB \[
 RB \]
 LC \{
 RC \}
+TYPE int|float
 STRUCT struct
 RETURN return
 IF if
 ELSE else
 WHILE while
-WS [ \r\t]+
+WS [ \n\r\t]+
 %%
-{INT} { printf("Integer value %d", atoi(yytext)); }
+{INT} { printf("INT\n"); }
+{FLOAT} { printf("FLOAT\n"); }
+{SEMI} { printf("SEMI\n"); }
+{COMMA} { printf("COMMA\n"); }
+{ASSIGNOP} { printf("ASSIGNOP\n"); }
+{RELOP} { printf("RELOP\n"); }
+{PLUS} { printf("PLUS\n"); }
+{MINUS} { printf("MINUS\n"); }
+{STAR} { printf("STAR\n"); }
+{DIV} { printf("DIV\n"); }
+{AND} { printf("AND\n"); }
 {OR} { printf("OR\n"); }
+{DOT} { printf("DOT\n"); }
+{NOT} { printf("NOT\n"); }
+{TYPE} { printf("TYPE\n"); }
+{LP} { printf("LP\n"); }
+{RP} { printf("RP\n"); }
+{LB} { printf("LB\n"); }
+{RB} { printf("RB\n"); }
+{LC} { printf("LC\n"); }
+{RC} { printf("RC\n"); }
+{STRUCT} { printf("STRUCT\n"); }
+{RETURN} { printf("RETURN\n"); }
+{IF} { printf("IF\n"); }
+{ELSE} { printf("ELSE\n"); }
+{WHILE} { printf("WHILE\n"); }
 {ID} { printf("ID\n"); }
+{WS} { printf("WHITESAPCE\n"); }
 . { printf("Error type A at Line %d: Mysterious characters \'%s\'\n", yylineno, yytext); }
 %%
-int main(int argc, char** argv) {
-    int i;
-    if (argc < 2) {
-        yylex();
-        return 0;
-    }
-    for (i = 1; i < argc; i++) {
-        FILE *f = fopen(argv[i], "r");
-        if (!f) {
-            perror(argv[1]);
-            return 1;
-        }
-        yyrestart(f);
-        yylex();
-        fclose(f);
-    }
-    if (argc > 1) {
-    }
-    return 0;
-}

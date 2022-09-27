@@ -10,21 +10,26 @@ LIBS=-lfl
 _DEPS = node.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = lex.yy.o
+_OBJ = lex.yy.o main.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 run:
+	make flex
 	make scanner
-	@./scanner test.c
+	./scanner test.c
 
 flex: lexical.l
-	@flex lexical.l
+	flex lexical.l
 
 scanner: $(OBJ)
 	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
+
+bison: syntax.y
+	bison -d syntax.y
+	# mv ./syntax.tab.h ../include/syntax.tab.h
 
 .PHONY: clean
 
