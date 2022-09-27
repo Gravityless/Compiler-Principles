@@ -3,6 +3,7 @@
 // extern FILE *yyin;
 extern int yylex();
 extern int yyrestart();
+extern int yyparse();
 
 int main(int argc, char** argv) {
     int i;
@@ -17,10 +18,9 @@ int main(int argc, char** argv) {
             return 1;
         }
         yyrestart(f);
-        yylex();
+        // yylex();
+        yyparse();
         fclose(f);
-    }
-    if (argc > 1) {
     }
     return 0;
 }

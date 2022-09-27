@@ -10,28 +10,36 @@ LIBS=-lfl
 _DEPS = node.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = lex.yy.o main.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+_FLEX_OBJ = lex.yy.o main.o
+FLEX_OBJ = $(patsubst %,$(ODIR)/%,$(_FLEX_OBJ))
+
+_BISON_OBJ = syntax.tab.o main.o
+BISON_OBJ = $(patsubst %,$(ODIR)/%,$(_BISON_OBJ))
 
 $(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-run:
-	make flex
-	make scanner
-	./scanner test.c
+run: 
+	make parser
+	./parser test.cmm
 
 flex: lexical.l
 	flex lexical.l
 
-scanner: $(OBJ)
+scanner: $(FLEX_OBJ)
+	make flex
 	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
 
 bison: syntax.y
 	bison -d syntax.y
 	# mv ./syntax.tab.h ../include/syntax.tab.h
 
+parser: $(BISON_OBJ)
+	make bison
+	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
+	# gcc main.c syntax.tab.c -lfl -ly -o parser
+
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ scanner
+	rm -f $(ODIR)/*.o *~ 

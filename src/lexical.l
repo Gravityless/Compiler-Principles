@@ -1,5 +1,13 @@
 %{
-    #include <stdio.h>
+#include <stdio.h>
+#include "syntax.tab.h"
+
+int yycolumn = 1;
+#define YY_USER_ACTION \
+    yylloc.first_line = yylloc.last_line = yylineno; \
+    yylloc.first_column = yycolumn; \
+    yylloc.last_column = yycolumn + yyleng - 1; \
+    yycolumn += yyleng;
 %}
 %option yylineno
 
@@ -30,16 +38,19 @@ RETURN return
 IF if
 ELSE else
 WHILE while
-WS [ \n\r\t]+
+WS [ \r\t]+
 %%
-{INT} { printf("INT\n"); }
+{INT} { 
+    yylval = atoi(yytext);
+    return INT;
+    }
 {FLOAT} { printf("FLOAT\n"); }
 {SEMI} { printf("SEMI\n"); }
 {COMMA} { printf("COMMA\n"); }
 {ASSIGNOP} { printf("ASSIGNOP\n"); }
 {RELOP} { printf("RELOP\n"); }
 {PLUS} { printf("PLUS\n"); }
-{MINUS} { printf("MINUS\n"); }
+{MINUS} { return MINUS; }
 {STAR} { printf("STAR\n"); }
 {DIV} { printf("DIV\n"); }
 {AND} { printf("AND\n"); }
@@ -60,5 +71,6 @@ WS [ \n\r\t]+
 {WHILE} { printf("WHILE\n"); }
 {ID} { printf("ID\n"); }
 {WS} { printf("WHITESAPCE\n"); }
+\n { yycolumn = 1; }
 . { printf("Error type A at Line %d: Mysterious characters \'%s\'\n", yylineno, yytext); }
 %%
