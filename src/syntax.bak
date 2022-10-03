@@ -1,35 +1,31 @@
 %{
-#include <stdio.h>
-#include "lex.yy.c"
 #include "node.h"
+#include "lex.yy.c"
+
 
 Node* root;
 extern int errornum;
 void yyerror(char* msg);
 %}
 
-%union{
-    Node* type_node;
-}
-
 // Tokens
-%token <type_node> INT FLOAT STRUCT ID TYPE COMMA SEMI DOT
-%token <type_node> PLUS MINUS STAR DIV RELOP ASSIGNOP
-%token <type_node> AND OR NOT IF ELSE WHILE 
-%token <type_node> RETURN LP RP LB RB LC RC 
+%token INT FLOAT STRUCT ID TYPE COMMA SEMI DOT
+%token PLUS MINUS STAR DIV RELOP ASSIGNOP
+%token AND OR NOT IF ELSE WHILE 
+%token RETURN LP RP LB RB LC RC 
 
 // High-level Definitions
-%type <type_node> Program ExtDefList ExtDef ExtDecList   
+%type Program ExtDefList ExtDef ExtDecList   
 // Specifiers
-%type <type_node> Specifier StructSpecifier OptTag Tag 
+%type Specifier StructSpecifier OptTag Tag 
 // Declarators 
-%type <type_node> VarDec FunDec VarList ParamDec    
+%type VarDec FunDec VarList ParamDec    
 // Statements     
-%type <type_node> CompSt StmtList Stmt   
+%type CompSt StmtList Stmt   
 // Local Definitions                
-%type <type_node> DefList Def Dec DecList   
+%type DefList Def Dec DecList   
 // Expressions
-%type <type_node> Exp Args   
+%type Exp Args   
 
 // Precedence & Associativity
 %right ASSIGNOP
@@ -51,7 +47,7 @@ void yyerror(char* msg);
 Program: ExtDefList { $$ = newNode("Program", NULL, @$.first_line, false, 1, $1); root = $$; }
     ;
 ExtDefList: ExtDef ExtDefList { $$ = newNode("ExtDefList", NULL, @$.first_line, false, 2, $1, $2); }
-    | /* empty */ { $$ = newNode("ExtDefList", NULL, @$.first_line, false, 0); }
+    | /* empty */ { $$ = NULL; }
     ;
 ExtDef: Specifier ExtDecList SEMI { $$ = newNode("ExtDef", NULL, @$.first_line, false, 3, $1, $2, $3); }
     | Specifier SEMI { $$ = newNode("ExtDef", NULL, @$.first_line, false, 2, $1, $2); }
@@ -67,7 +63,7 @@ StructSpecifier: STRUCT OptTag LC DefList RC { $$ = newNode("StructSpecifier", N
     | STRUCT Tag { $$ = newNode("StructSpecifier", NULL, @$.first_line, false, 2, $1, $2); }
     ;
 OptTag: ID { $$ = newNode("OptTag", NULL, @$.first_line, false, 1, $1); }
-    | /* empty */ { $$ = newNode("OptTag", NULL, @$.first_line, false, 0); }
+    | /* empty */ { $$ = NULL; }
     ;
 Tag: ID { $$ = newNode("Tag", NULL, @$.first_line, false, 1, $1); }
     ;
@@ -85,7 +81,7 @@ ParamDec: Specifier VarDec { $$ = newNode("ParamDec", NULL, @$.first_line, false
 CompSt: LC DefList StmtList RC { $$ = newNode("CompSt", NULL, @$.first_line, false, 4, $1, $2, $3, $4); }
     ;
 StmtList: Stmt StmtList { $$ = newNode("StmtList", NULL, @$.first_line, false, 2, $1, $2); }
-    | /* empty */ { $$ = newNode("StmtList", NULL, @$.first_line, false, 0); }
+    | /* empty */ { $$ = NULL; }
     ;
 Stmt: Exp SEMI { $$ = newNode("Stmt", NULL, @$.first_line, false, 2, $1, $2); }
     | CompSt { $$ = newNode("Stmt", NULL, @$.first_line, false, 1, $1); }
@@ -95,7 +91,7 @@ Stmt: Exp SEMI { $$ = newNode("Stmt", NULL, @$.first_line, false, 2, $1, $2); }
     | WHILE LP Exp RP Stmt { $$ = newNode("Stmt", NULL, @$.first_line, false, 5, $1, $2, $3, $4, $5); }
     ;
 DefList: Def DefList { $$ = newNode("DefList", NULL, @$.first_line, false, 2, $1, $2); }
-    | /* empty */ { $$ = newNode("DefList", NULL, @$.first_line, false, 0); }
+    | /* empty */ { $$ = NULL; }
     ;
 Def: Specifier DecList SEMI { $$ = newNode("Def", NULL, @$.first_line, false, 3, $1, $2, $3); }
     ;
