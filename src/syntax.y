@@ -79,6 +79,7 @@ VarList: ParamDec COMMA VarList { $$ = newNode("VarList", "", @$.first_line, fal
 ParamDec: Specifier VarDec { $$ = newNode("ParamDec", "", @$.first_line, false, 2, $1, $2); }
     ;
 CompSt: LC DefList StmtList RC { $$ = newNode("CompSt", "", @$.first_line, false, 4, $1, $2, $3, $4); }
+    | error RC { errornum++; }
     ;
 StmtList: Stmt StmtList { $$ = newNode("StmtList", "", @$.first_line, false, 2, $1, $2); }
     | /* empty */ { $$ = NULL; }
@@ -89,6 +90,7 @@ Stmt: Exp SEMI { $$ = newNode("Stmt", "", @$.first_line, false, 2, $1, $2); }
     | IF LP Exp RP Stmt { $$ = newNode("Stmt", "", @$.first_line, false, 5, $1, $2, $3, $4, $5); }
     | IF LP Exp RP Stmt ELSE Stmt { $$ = newNode("Stmt", "", @$.first_line, false, 7, $1, $2, $3, $4, $5, $6, $7); }
     | WHILE LP Exp RP Stmt { $$ = newNode("Stmt", "", @$.first_line, false, 5, $1, $2, $3, $4, $5); }
+    | error SEMI { errornum++; }
     ;
 DefList: Def DefList { $$ = newNode("DefList", "", @$.first_line, false, 2, $1, $2); }
     | /* empty */ { $$ = NULL; }
@@ -119,6 +121,7 @@ Exp: Exp ASSIGNOP Exp { $$ = newNode("Exp", "", @$.first_line, false, 3, $1, $2,
     | ID { $$ = newNode("Exp", "", @$.first_line, false, 1, $1); }
     | INT { $$ = newNode("Exp", "", @$.first_line, false, 1, $1); }
     | FLOAT { $$ = newNode("Exp", "", @$.first_line, false, 1, $1); }
+    | Exp LB error RB { errornum++; }
     ;
 Args: Exp COMMA Args { $$ = newNode("Args", "", @$.first_line, false, 3, $1, $2, $3); }
     | Exp { $$ = newNode("Args", "", @$.first_line, false, 1, $1); }
