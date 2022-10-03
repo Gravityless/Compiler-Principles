@@ -20,6 +20,8 @@ typedef struct node {
 
 Node* newNode(char* name, char* val, int lineno, bool is_token, int argc, ...);
 
-// void printTree(Node* node, int ws);
+void printSubtree(Node* node, int space);
+
+void printTree(Node* root);
 
 #endif

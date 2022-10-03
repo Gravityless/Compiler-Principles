@@ -29,3 +29,29 @@ Node* newNode(char* name, char* val, int lineno, bool is_token, int argc, ...) {
 
     return p;
 }
+
+void printSubtree(Node* node, int space) {
+    if (node == NULL) return;
+
+    for (int i = 0; i < space; i++) printf("  ");
+
+    if (!node->token) 
+        printf("%s (%d)\n", node->name, node->lineno);
+    else if(strcmp("ID", node->name) == 0 \
+        || strcmp("TYPE", node->name) == 0 \
+        || strcmp("INT", node->name) == 0 \
+        || strcmp("FLOAT", node->name) == 0)
+        printf("%s: %s\n", node->name, node->val);
+    else
+        printf("%s\n", node->name);
+
+    printSubtree(node->child, space + 1);
+    printSubtree(node->sib, space);
+
+    return;  
+}
+
+void printTree(Node* root) {
+    printSubtree(root, 0);
+    return;
+}

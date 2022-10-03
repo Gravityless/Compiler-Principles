@@ -1,10 +1,11 @@
-#include <stdio.h>
+#include "node.h"
 
 // extern FILE *yyin;
 extern int yylex();
 extern int yyrestart();
 extern int yyparse();
 
+extern Node* root;
 int errornum = 0;
 
 int main(int argc, char** argv) {
@@ -23,6 +24,10 @@ int main(int argc, char** argv) {
         // yylex();
         yyparse();
         fclose(f);
+
+        if (errornum == 0) {
+            printTree(root);
+        }
     }
     return 0;
 }
