@@ -5,6 +5,8 @@ extern int yylex();
 extern int yyrestart();
 extern int yyparse();
 
+int errornum = 0;
+
 int main(int argc, char** argv) {
     int i;
     if (argc < 2) {
@@ -15,7 +17,7 @@ int main(int argc, char** argv) {
         FILE *f = fopen(argv[i], "r");
         if (!f) {
             perror(argv[1]);
-            return 1;
+            return -1;
         }
         yyrestart(f);
         // yylex();

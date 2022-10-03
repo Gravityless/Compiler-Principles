@@ -1,45 +1,39 @@
-IDIR=../include
-ODIR=../obj
-LDIR=../lib
+# 编译器设定和编译选项
+CC = gcc
+FLEX = flex
+BISON = bison
+CFLAGS = -std=c99
 
-CC=gcc
-CFLAGS=-I$(IDIR)
+# 编译目标：src目录下的所有.c文件
+CFILES = $(shell find ./ -name "*.c")
+OBJS = $(CFILES:.c=.o)
+LFILE = $(shell find ./ -name "*.l")
+YFILE = $(shell find ./ -name "*.y")
+LFC = $(shell find ./ -name "*.l" | sed s/[^/]*\\.l/lex.yy.c/)
+YFC = $(shell find ./ -name "*.y" | sed s/[^/]*\\.y/syntax.tab.c/)
+LFO = $(LFC:.c=.o)
+YFO = $(YFC:.c=.o)
 
-LIBS=-lfl
+parser: syntax $(filter-out $(LFO),$(OBJS))
+	$(CC) -o parser $(filter-out $(LFO),$(OBJS)) -lfl -ly
 
-_DEPS = node.h
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+syntax: lexical syntax-c
+	$(CC) -c $(YFC) -o $(YFO)
 
-_FLEX_OBJ = lex.yy.o main.o
-FLEX_OBJ = $(patsubst %,$(ODIR)/%,$(_FLEX_OBJ))
+lexical: $(LFILE)
+	$(FLEX) -o $(LFC) $(LFILE)
 
-_BISON_OBJ = syntax.tab.o main.o
-BISON_OBJ = $(patsubst %,$(ODIR)/%,$(_BISON_OBJ))
+syntax-c: $(YFILE)
+	$(BISON) -o $(YFC) -d -v $(YFILE)
 
-$(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+-include $(patsubst %.o, %.d, $(OBJS))
 
-run: 
-	make parser
-	./parser test.cmm
-
-flex: lexical.l
-	flex lexical.l
-
-scanner: $(FLEX_OBJ)
-	make flex
-	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
-
-bison: syntax.y
-	bison -d syntax.y
-	# mv ./syntax.tab.h ../include/syntax.tab.h
-
-parser: $(BISON_OBJ)
-	make bison
-	$(CC) -o $@ $^ $(LIBS) $(CFLAGS)
-	# gcc main.c syntax.tab.c -lfl -ly -o parser
-
-.PHONY: clean
-
+# 定义的一些伪目标
+.PHONY: clean test
+test:
+	./parser ../Test/test1.cmm
 clean:
-	rm -f $(ODIR)/*.o *~ 
+	rm -f parser lex.yy.c syntax.tab.c syntax.tab.h syntax.output
+	rm -f $(OBJS) $(OBJS:.o=.d)
+	rm -f $(LFC) $(YFC) $(YFC:.c=.h)
+	rm -f *~

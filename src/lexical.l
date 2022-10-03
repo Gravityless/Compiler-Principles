@@ -1,8 +1,15 @@
 %{
-#include <stdio.h>
+#define YYSTYPE Node*
 #include "syntax.tab.h"
+#include "node.h"
 
+extern int errornum;
 int yycolumn = 1;
+
+#define buildNode(name, val) \
+    Node* node = newNode(name, val, yylineno, true, 0); \
+    yylval = node;
+
 #define YY_USER_ACTION \
     yylloc.first_line = yylloc.last_line = yylineno; \
     yylloc.first_column = yycolumn; \
@@ -39,38 +46,38 @@ IF if
 ELSE else
 WHILE while
 WS [ \r\t]+
+
 %%
-{INT} { 
-    yylval = atoi(yytext);
-    return INT;
-    }
-{FLOAT} { printf("FLOAT\n"); }
-{SEMI} { printf("SEMI\n"); }
-{COMMA} { printf("COMMA\n"); }
-{ASSIGNOP} { printf("ASSIGNOP\n"); }
-{RELOP} { printf("RELOP\n"); }
-{PLUS} { printf("PLUS\n"); }
-{MINUS} { return MINUS; }
-{STAR} { printf("STAR\n"); }
-{DIV} { printf("DIV\n"); }
-{AND} { printf("AND\n"); }
-{OR} { printf("OR\n"); }
-{DOT} { printf("DOT\n"); }
-{NOT} { printf("NOT\n"); }
-{TYPE} { printf("TYPE\n"); }
-{LP} { printf("LP\n"); }
-{RP} { printf("RP\n"); }
-{LB} { printf("LB\n"); }
-{RB} { printf("RB\n"); }
-{LC} { printf("LC\n"); }
-{RC} { printf("RC\n"); }
-{STRUCT} { printf("STRUCT\n"); }
-{RETURN} { printf("RETURN\n"); }
-{IF} { printf("IF\n"); }
-{ELSE} { printf("ELSE\n"); }
-{WHILE} { printf("WHILE\n"); }
-{ID} { printf("ID\n"); }
-{WS} { printf("WHITESAPCE\n"); }
+
+{INT} { buildNode("INT", yytext); return INT; }
+{FLOAT} { buildNode("FLOAT", yytext); return FLOAT; }
+{SEMI} { buildNode("SEMI", yytext); return SEMI; }
+{COMMA} { buildNode("COMMA", yytext); return COMMA; }
+{ASSIGNOP} { buildNode("ASSIGNOP", yytext); return ASSIGNOP; }
+{RELOP} { buildNode("RELOP", yytext); return RELOP; }
+{PLUS} { buildNode("PLUS", yytext); return PLUS; }
+{MINUS} { buildNode("MINUS", yytext); return MINUS; }
+{STAR} { buildNode("STAR", yytext); return STAR; }
+{DIV} { buildNode("DIV", yytext); return DIV; }
+{AND} { buildNode("AND", yytext); return AND; }
+{OR} { buildNode("OR", yytext); return OR; }
+{DOT} { buildNode("DOT", yytext); return DOT; }
+{NOT} { buildNode("NOT", yytext); return NOT; }
+{TYPE} { buildNode("TYPE", yytext); return TYPE; }
+{LP} { buildNode("LP", yytext); return LP; }
+{RP} { buildNode("RP", yytext); return RP; }
+{LB} { buildNode("LB", yytext); return LB; }
+{RB} { buildNode("RB", yytext); return RB; }
+{LC} { buildNode("LC", yytext); return LC; }
+{RC} { buildNode("RC", yytext); return RC; }
+{STRUCT} { buildNode("STRUCT", yytext); return STRUCT; }
+{RETURN} { buildNode("RETURN", yytext); return RETURN; }
+{IF} { buildNode("IF", yytext); return IF; }
+{ELSE} { buildNode("ELSE", yytext); return ELSE; }
+{WHILE} { buildNode("WHILE", yytext); return WHILE; }
+{ID} { buildNode("ID", yytext); return ID; }
+{WS} { }
 \n { yycolumn = 1; }
-. { printf("Error type A at Line %d: Mysterious characters \'%s\'\n", yylineno, yytext); }
+. { errornum++; printf("Error type A at Line %d: Mysterious characters \'%s\'\n", yylineno, yytext); }
+
 %%
