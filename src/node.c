@@ -1,8 +1,8 @@
 #include "node.h"
 
-Node* newNode(char* name, char* val, int lineno, bool is_token, int argc, ...) {
+Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...) {
     Node* p = (Node*) malloc(sizeof(Node));
-    strcpy(p->name, name);
+    strcpy(p->type, type);
     strcpy(p->val, val);
     p->lineno = lineno;
     p->token = is_token;
@@ -36,14 +36,14 @@ void printSubtree(Node* node, int space) {
     for (int i = 0; i < space; i++) printf("  ");
 
     if (!node->token) 
-        printf("%s (%d)\n", node->name, node->lineno);
-    else if(strcmp("ID", node->name) == 0 \
-        || strcmp("TYPE", node->name) == 0 \
-        || strcmp("INT", node->name) == 0 \
-        || strcmp("FLOAT", node->name) == 0)
-        printf("%s: %s\n", node->name, node->val);
+        printf("%s (%d)\n", node->type, node->lineno);
+    else if(strcmp("ID", node->type) == 0 \
+        || strcmp("TYPE", node->type) == 0 \
+        || strcmp("INT", node->type) == 0 \
+        || strcmp("FLOAT", node->type) == 0)
+        printf("%s: %s\n", node->type, node->val);
     else
-        printf("%s\n", node->name);
+        printf("%s\n", node->type);
 
     printSubtree(node->child, space + 1);
     printSubtree(node->sib, space);

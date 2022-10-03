@@ -9,7 +9,7 @@
 #include <assert.h>
 
 typedef struct node {
-    char name[40];
+    char type[40];
     char val[40];
     int lineno;
     bool token;
@@ -18,7 +18,7 @@ typedef struct node {
     struct node* child;
 } Node, *Subtree;
 
-Node* newNode(char* name, char* val, int lineno, bool is_token, int argc, ...);
+Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...);
 
 void printSubtree(Node* node, int space);
 
