@@ -58,6 +58,7 @@ ExtDef: Specifier ExtDecList SEMI { $$ = newNode("ExtDef", "", @$.first_line, fa
     ;
 ExtDecList: VarDec { $$ = newNode("ExtDecList", "", @$.first_line, false, 1, $1); }
     | VarDec COMMA ExtDecList { $$ = newNode("ExtDecList", "", @$.first_line, false, 3, $1, $2, $3); }
+    | VarDec ASSIGNOP error { errornum++; }
     ;
 Specifier: TYPE { $$ = newNode("Specifier", "", @$.first_line, false, 1, $1); }
     | StructSpecifier { $$ = newNode("Specifier", "", @$.first_line, false, 1, $1); }
@@ -74,10 +75,12 @@ Tag: ID { $$ = newNode("Tag", "", @$.first_line, false, 1, $1); }
 VarDec: ID { $$ = newNode("VarDec", "", @$.first_line, false, 1, $1); }
     | VarDec LB INT RB { $$ = newNode("VarDec", "", @$.first_line, false, 4, $1, $2, $3, $4); }
     | VarDec LB error { errornum++; }
+    | VarDec LB INT error { errornum++; }
     ;
 FunDec: ID LP VarList RP { $$ = newNode("FunDec", "", @$.first_line, false, 4, $1, $2, $3, $4); }
     | ID LP RP { $$ = newNode("FunDec", "", @$.first_line, false, 3, $1, $2, $3); }
     | error RP { errornum++; }
+    | ID LP error { errornum++; }
     ;
 VarList: ParamDec COMMA VarList { $$ = newNode("VarList", "", @$.first_line, false, 3, $1, $2, $3); }
     | ParamDec { $$ = newNode("VarList", "", @$.first_line, false, 1, $1); }
@@ -103,6 +106,7 @@ DefList: Def DefList { $$ = newNode("DefList", "", @$.first_line, false, 2, $1, 
     | /* empty */ { $$ = NULL; }
     ;
 Def: Specifier DecList SEMI { $$ = newNode("Def", "", @$.first_line, false, 3, $1, $2, $3); }
+    | Specifier DecList error { errornum++;}
     ;
 DecList: Dec { $$ = newNode("DecList", "", @$.first_line, false, 1, $1); }
     | Dec COMMA DecList { $$ = newNode("DecList", "", @$.first_line, false, 3, $1, $2, $3); }
@@ -129,6 +133,8 @@ Exp: Exp ASSIGNOP Exp { $$ = newNode("Exp", "", @$.first_line, false, 3, $1, $2,
     | INT { $$ = newNode("Exp", "", @$.first_line, false, 1, $1); }
     | FLOAT { $$ = newNode("Exp", "", @$.first_line, false, 1, $1); }
     | Exp LB error RB { errornum++; }
+    | Exp LB Exp error { errornum++; }
+    | ID LP error RP { errornum++; }
     ;
 Args: Exp COMMA Args { $$ = newNode("Args", "", @$.first_line, false, 3, $1, $2, $3); }
     | Exp { $$ = newNode("Args", "", @$.first_line, false, 1, $1); }
