@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
         fclose(f);
 
         if (errornum == 0) {
-            printTree(root);
+            printTree(root, 0);
         }
     }
     return 0;

@@ -16,9 +16,27 @@ Program (1)
             DecList (2)
               Dec (2)
                 VarDec (2)
-                  ID: x
+                  ID: a
                 ASSIGNOP
                 Exp (2)
-                  FLOAT: 1.8
+                  FLOAT: 1.200000
+            SEMI
+          DefList (3)
+            Def (3)
+              Specifier (3)
+                TYPE: int
+              DecList (3)
+                Dec (3)
+                  VarDec (3)
+                    ID: b
+                  ASSIGNOP
+                  Exp (3)
+                    INT: 3
+              SEMI
+        StmtList (4)
+          Stmt (4)
+            RETURN
+            Exp (4)
+              INT: 0
             SEMI
         RC

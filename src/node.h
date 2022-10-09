@@ -14,14 +14,12 @@ typedef struct node {
     int lineno;
     bool token;
 
-    struct node* sib;
+    struct node* sibling;
     struct node* child;
 } Node, *Subtree;
 
 Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...);
 
-void printSubtree(Node* node, int space);
-
-void printTree(Node* root);
+void printTree(Node* node, int space);
 
 #endif

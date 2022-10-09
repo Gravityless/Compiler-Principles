@@ -6,7 +6,7 @@ Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...) {
     strcpy(p->val, val);
     p->lineno = lineno;
     p->token = is_token;
-    p->sib = NULL;
+    p->sibling = NULL;
     p->child = NULL;
 
     if (!is_token) {
@@ -20,8 +20,8 @@ Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...) {
         p->child = child;
 
         for (; argc > 0; argc--) {
-            child->sib = va_arg(vargs, Subtree);
-            if (child->sib != NULL) child = child->sib;
+            child->sibling = va_arg(vargs, Subtree);
+            if (child->sibling != NULL) child = child->sibling;
         }
         
         va_end(vargs);
@@ -30,28 +30,25 @@ Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...) {
     return p;
 }
 
-void printSubtree(Node* node, int space) {
+void printTree(Node* node, int space) {
     if (node == NULL) return;
 
     for (int i = 0; i < space; i++) printf("  ");
 
     if (!node->token) 
         printf("%s (%d)\n", node->type, node->lineno);
+    else if (strcmp("INT", node->type) == 0)
+        printf("%s: %d\n", node->type, atoi(node->val));
+    else if (strcmp("FLOAT", node->type) == 0)
+        printf("%s: %f\n", node->type, atof(node->val));
     else if(strcmp("ID", node->type) == 0 \
-        || strcmp("TYPE", node->type) == 0 \
-        || strcmp("INT", node->type) == 0 \
-        || strcmp("FLOAT", node->type) == 0)
+        || strcmp("TYPE", node->type) == 0)
         printf("%s: %s\n", node->type, node->val);
     else
         printf("%s\n", node->type);
 
-    printSubtree(node->child, space + 1);
-    printSubtree(node->sib, space);
+    printTree(node->child, space + 1);
+    printTree(node->sibling, space);
 
     return;  
-}
-
-void printTree(Node* root) {
-    printSubtree(root, 0);
-    return;
 }
