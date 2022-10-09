@@ -52,6 +52,9 @@ ExtDefList: ExtDef ExtDefList { $$ = newNode("ExtDefList", "", @$.first_line, fa
 ExtDef: Specifier ExtDecList SEMI { $$ = newNode("ExtDef", "", @$.first_line, false, 3, $1, $2, $3); }
     | Specifier SEMI { $$ = newNode("ExtDef", "", @$.first_line, false, 2, $1, $2); }
     | Specifier FunDec CompSt { $$ = newNode("ExtDef", "", @$.first_line, false, 3, $1, $2, $3); }
+    | Specifier error { errornum++; }
+    | error SEMI { errornum++; }
+    | error RC { errornum++; }
     ;
 ExtDecList: VarDec { $$ = newNode("ExtDecList", "", @$.first_line, false, 1, $1); }
     | VarDec COMMA ExtDecList { $$ = newNode("ExtDecList", "", @$.first_line, false, 3, $1, $2, $3); }
@@ -61,6 +64,7 @@ Specifier: TYPE { $$ = newNode("Specifier", "", @$.first_line, false, 1, $1); }
     ;
 StructSpecifier: STRUCT OptTag LC DefList RC { $$ = newNode("StructSpecifier", "", @$.first_line, false, 5, $1, $2, $3, $4, $5); }
     | STRUCT Tag { $$ = newNode("StructSpecifier", "", @$.first_line, false, 2, $1, $2); }
+    | STRUCT OptTag LC error RC { errornum++; }
     ;
 OptTag: ID { $$ = newNode("OptTag", "", @$.first_line, false, 1, $1); }
     | /* empty */ { $$ = NULL; }
@@ -69,14 +73,17 @@ Tag: ID { $$ = newNode("Tag", "", @$.first_line, false, 1, $1); }
     ;
 VarDec: ID { $$ = newNode("VarDec", "", @$.first_line, false, 1, $1); }
     | VarDec LB INT RB { $$ = newNode("VarDec", "", @$.first_line, false, 4, $1, $2, $3, $4); }
+    | VarDec LB error { errornum++; }
     ;
 FunDec: ID LP VarList RP { $$ = newNode("FunDec", "", @$.first_line, false, 4, $1, $2, $3, $4); }
     | ID LP RP { $$ = newNode("FunDec", "", @$.first_line, false, 3, $1, $2, $3); }
+    | error RP { errornum++; }
     ;
 VarList: ParamDec COMMA VarList { $$ = newNode("VarList", "", @$.first_line, false, 3, $1, $2, $3); }
     | ParamDec { $$ = newNode("VarList", "", @$.first_line, false, 1, $1); }
     ;
 ParamDec: Specifier VarDec { $$ = newNode("ParamDec", "", @$.first_line, false, 2, $1, $2); }
+    | error VarDec { errornum++; }
     ;
 CompSt: LC DefList StmtList RC { $$ = newNode("CompSt", "", @$.first_line, false, 4, $1, $2, $3, $4); }
     | error RC { errornum++; }
