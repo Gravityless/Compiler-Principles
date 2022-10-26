@@ -1,4 +1,5 @@
 #include "node.h"
+#include "sematic.h"
 
 // extern FILE *yyin;
 extern int yylex();
@@ -26,7 +27,7 @@ int main(int argc, char** argv) {
         fclose(f);
 
         if (errornum == 0) {
-            printTree(root, 0);
+            semanticAnalysis(root);
         }
     }
     return 0;
