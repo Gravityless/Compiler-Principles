@@ -30,7 +30,7 @@ struct Function_
 
 struct Type_
 {
-    enum { BASIC, ARRAY, STRUCTURE} kind;
+    enum { BASIC, ARRAY, STRUCTURE, FUNCTION} kind;
     union
     {
         int basic;

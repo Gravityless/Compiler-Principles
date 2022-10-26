@@ -1,5 +1,5 @@
 #include "node.h"
-#include "sematic.h"
+#include "semantic.h"
 
 // extern FILE *yyin;
 extern int yylex();
