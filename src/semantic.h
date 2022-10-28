@@ -14,6 +14,8 @@ typedef struct Stack_*     Stack;
 typedef struct Table_*     Table;
 typedef struct Function_*  Function;
 
+extern Table table;
+
 struct FieldList_
 {
     char* name;
@@ -72,10 +74,10 @@ void deleteType(Type type);
 bool checkType(Type t1, Type t2);
 void printType(Type type);
 
-FieldList newFieldList(char* Name, Type type);
+FieldList newFieldList(char* name, Type type);
 FieldList copyFieldList(FieldList fieldList);
 void deleteFieldList(FieldList fieldList);
-void setFieldListName(FieldList fieldList, char* Name);
+void setFieldListName(FieldList fieldList, char* name);
 void printFieldList(FieldList fieldList);
 
 TableItem newItem(int depth, FieldList fieldList);
@@ -136,6 +138,15 @@ static inline unsigned int getHashCode(char* name) {
 
 static inline void Error(SEMERR type, int line, char* msg) {
     printf("Error type %d at Line %d: %s\n", type, line, msg);
+}
+
+static inline char* newString(char* s) {
+    if (s == NULL) return NULL;
+    int length = strlen(s) + 1;
+    char* t = (char*)malloc(sizeof(char) * length);
+    assert(t != NULL);
+    strncpy(t, s, length);
+    return t;
 }
 
 #endif
