@@ -19,7 +19,7 @@ Type newType(int kind, ...)
         break;
     case STRUCTURE:
         t->u.structure->name = va_arg(ap, char *);
-        t->u.structure->tail = va_arg(ap, FieldList);
+        t->u.structure->type = va_arg(ap, FieldList);
         break;
     case FUNCTION:
         t->u.function->argc = va_arg(ap, int);
@@ -48,7 +48,7 @@ Type copyType(Type type)
         break;
     case STRUCTURE:
         t->u.structure->name = newString(type->u.structure->name);
-        t->u.structure->tail = copyFieldList(type->u.structure->tail);
+        t->u.structure->type = copyFieldList(type->u.structure->type);
         break;
     case FUNCTION:
         t->u.function->argc = type->u.function->argc;
@@ -71,7 +71,7 @@ void deleteType(Type type)
     case STRUCTURE:
         if (type->u.structure->name)
             free(type->u.structure->name);
-        t = type->u.structure->tail;
+        t = type->u.structure->type;
         while (t)
         {
             FieldList fieldList = t;
@@ -138,7 +138,7 @@ void printType(Type type)
         {
             printf("struct name is %s\n", type->u.structure->name);
         }
-        printFieldList(type->u.structure->tail);
+        printFieldList(type->u.structure->type);
         break;
     case FUNCTION:
         printf("function argc is %d\n", type->u.function->argc);
@@ -451,7 +451,7 @@ void genExtDecList(Node *node, Type specifier)
         TableItem pItem = genVarDec(pNode->child, specifier);
         if (checkTableItem(table, pItem))
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "Redefine variable \"%s\".", pItem->fieldList->name);
             Error(VAR_REDEF, pNode->lineno, msg);
             deleteItem(pItem);
@@ -510,7 +510,7 @@ Type genStructSpecifier(Node *node)
             genDefList(pNode->sibling, item);
         if (checkTableItem(table, item))
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "Duplicated name \"%s\".", item->fieldList->name);
             Error(STRUCT_REDEF, node->lineno, msg);
             deleteItem(item);
@@ -518,7 +518,7 @@ Type genStructSpecifier(Node *node)
         else
         {
             result = newType(STRUCTURE, newString(item->fieldList->name),
-                             copyFieldList(item->fieldList->type->u.structure->tail));
+                             copyFieldList(item->fieldList->type->u.structure->type));
             if (!strcmp(node->child->sibling->type, "OptTag"))
                 addTableItem(table, item);
             else
@@ -530,14 +530,14 @@ Type genStructSpecifier(Node *node)
         TableItem item = searchTableItem(table, pNode->child->val);
         if (item == NULL || !structDef(item))
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "Undefined structure \"%s\".", pNode->child->val);
             Error(STRUCT_UNDEF, node->lineno, msg);
         }
         else
         {
             result = newType(STRUCTURE, newString(item->fieldList->name),
-                             copyFieldList(item->fieldList->type->u.structure->tail));
+                             copyFieldList(item->fieldList->type->u.structure->type));
         }
     }
 
@@ -574,7 +574,7 @@ void genFunDec(Node *node, Type returnType)
         genVarList(node->child->sibling->sibling, item);
     if (checkTableItem(table, item))
     {
-        char msg[MAX_MSG_LENGTH] = {0};
+        char msg[80] = {0};
         sprintf(msg, "Redefine function \"%s\".", item->fieldList->name);
         Error(FUN_REDEF, node->lineno, msg);
         deleteItem(item);
@@ -621,7 +621,7 @@ FieldList genParamDec(Node *node)
         deleteType(specifierType);
     if (checkTableItem(table, item))
     {
-        char msg[MAX_MSG_LENGTH] = {0};
+        char msg[80] = {0};
         sprintf(msg, "Redefine variable \"%s\".", item->fieldList->name);
         Error(VAR_REDEF, node->lineno, msg);
         deleteItem(item);
@@ -730,13 +730,13 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
         {
             TableItem decitem = genVarDec(node->child, specifier);
             FieldList payload = decitem->fieldList;
-            FieldList structField = structInfo->fieldList->type->u.structure->tail;
+            FieldList structField = structInfo->fieldList->type->u.structure->type;
             FieldList last = NULL;
             while (structField != NULL)
             {
                 if (!strcmp(payload->name, structField->name))
                 {
-                    char msg[MAX_MSG_LENGTH] = {0};
+                    char msg[80] = {0};
                     sprintf(msg, "Redefined field \"%s\".",
                             decitem->fieldList->name);
                     Error(FEILD_REDEF, node->lineno, msg);
@@ -751,7 +751,7 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
             }
             if (last == NULL)
             {
-                structInfo->fieldList->type->u.structure->tail =
+                structInfo->fieldList->type->u.structure->type =
                     copyFieldList(decitem->fieldList);
             }
             else
@@ -765,7 +765,7 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
             TableItem decitem = genVarDec(node->child, specifier);
             if (checkTableItem(table, decitem))
             {
-                char msg[MAX_MSG_LENGTH] = {0};
+                char msg[80] = {0};
                 sprintf(msg, "Redefined variable \"%s\".",
                         decitem->fieldList->name);
                 Error(VAR_REDEF, node->lineno, msg);
@@ -788,9 +788,9 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
         {
             TableItem decitem = genVarDec(node->child, specifier);
             Type exptype = genExp(node->child->sibling->sibling);
-            if (checkTableItem(table, decitem))
+            if (checkTableItemConflict(table, decitem))
             {
-                char msg[MAX_MSG_LENGTH] = {0};
+                char msg[80] = {0};
                 sprintf(msg, "Redefined variable \"%s\".",
                         decitem->fieldList->name);
                 Error(VAR_REDEF, node->lineno, msg);
@@ -902,14 +902,14 @@ Type genExp(Node *node)
                 }
                 else if (p1 && p1->kind != ARRAY)
                 {
-                    char msg[MAX_MSG_LENGTH] = {0};
+                    char msg[80] = {0};
                     sprintf(msg, "\"%s\" is not an array.", node->child->val);
                     Error(NOT_ARRAY, node->lineno, msg);
                 }
                 else if (!p2 || p2->kind != BASIC ||
                          p2->u.basic != 0)
                 {
-                    char msg[MAX_MSG_LENGTH] = {0};
+                    char msg[80] = {0};
                     sprintf(msg, "\"%s\" is not an integer.",
                             node->sibling->sibling->child->val);
                     Error(NOT_INT, node->lineno, msg);
@@ -938,7 +938,7 @@ Type genExp(Node *node)
                 else
                 {
                     Node *ref_id = node->sibling->sibling;
-                    FieldList structfield = p1->u.structure->tail;
+                    FieldList structfield = p1->u.structure->type;
                     while (structfield != NULL)
                     {
                         if (!strcmp(structfield->name, ref_id->val))
@@ -991,14 +991,14 @@ Type genExp(Node *node)
 
         if (funcInfo == NULL)
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "Undefined function \"%s\".", node->val);
             Error(FUN_UNDEF, node->lineno, msg);
             return NULL;
         }
         else if (funcInfo->fieldList->type->kind != FUNCTION)
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "\"%s\" is not a function.", node->val);
             Error(NOT_FUN, node->lineno, msg);
             return NULL;
@@ -1012,7 +1012,7 @@ Type genExp(Node *node)
         {
             if (funcInfo->fieldList->type->u.function->argc != 0)
             {
-                char msg[MAX_MSG_LENGTH] = {0};
+                char msg[80] = {0};
                 sprintf(msg,
                         "too few arguments to function \"%s\", except %d args.",
                         funcInfo->fieldList->name,
@@ -1025,9 +1025,9 @@ Type genExp(Node *node)
     else if (!strcmp(node->type, "ID"))
     {
         TableItem tp = searchTableItem(table, node->val);
-        if (tp == NULL || structDef(tp))
+        if (tp == NULL || StructDef(tp))
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "Undefined variable \"%s\".", node->val);
             Error(VAR_UNDEF, node->lineno, msg);
             return NULL;
@@ -1058,7 +1058,7 @@ void genArgs(Node *node, TableItem funcInfo)
     {
         if (arg == NULL)
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(
                 msg, "too many arguments to function \"%s\", except %d args.",
                 funcInfo->fieldList->name, funcInfo->fieldList->type->u.function->argc);
@@ -1068,7 +1068,7 @@ void genArgs(Node *node, TableItem funcInfo)
         Type realType = genExp(temp->child);
         if (!checkType(realType, arg->type))
         {
-            char msg[MAX_MSG_LENGTH] = {0};
+            char msg[80] = {0};
             sprintf(msg, "Function \"%s\" is not applicable for arguments.",
                     funcInfo->fieldList->name);
             Error(ARG_INCOMPATIBLE, node->lineno, msg);
@@ -1091,7 +1091,7 @@ void genArgs(Node *node, TableItem funcInfo)
     }
     if (arg != NULL)
     {
-        char msg[MAX_MSG_LENGTH] = {0};
+        char msg[80] = {0};
         sprintf(msg, "too few arguments to function \"%s\", except %d args.",
                 funcInfo->fieldList->name, funcInfo->fieldList->type->u.function->argc);
         Error(ARG_INCOMPATIBLE, node->lineno, msg);
@@ -1112,6 +1112,6 @@ void tranverseTree(Node *node)
 void semanticAnalysis(Node *node)
 {
     table = initTable();
-    tranverseTree(node);
+    traverseTree(node);
     deleteTable(table);
 }

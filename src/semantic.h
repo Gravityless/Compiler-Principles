@@ -5,6 +5,7 @@
 #include "semErr.h"
 
 #define HASH_TABLE_SIZE 0x3fff
+#define MAX_MSG_LENGTH 100
 
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
@@ -105,7 +106,7 @@ void deleteTableItem(Table table, TableItem item);
 void clearCurDepthStackList(Table table);
 void printTable(Table table);
 
-void traverseTree(Node* node);
+void tranverseTree(Node* node);
 void genExtDef(Node* node);
 void genExtDecList(Node* node, Type specifier);
 Type genSpecifier(Node* node);
