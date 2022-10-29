@@ -1,6 +1,6 @@
 #include "semantic.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 Table table = NULL;
 
