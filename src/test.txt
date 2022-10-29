@@ -1,120 +1,35 @@
 generate tree.
-initTable.
-newHashTable.
-newScope.
-start tranverse Program.
-start tranverse ExtDefList.
-start tranverse ExtDef.
-genExtDef.
-genSpecifier TYPE: int.
-newType.
-genFunDec.
-copyType.
-newType.
-newFieldList name: main.
-newItem.
-findTableItem.
-searchTableItem.
-getHashHead.
-addTableItem.
-getScopeHead.
-setScopeHead.
-getHashHead.
-setHashHead.
-genCompSt.
-incrDepth.
-genDefList.
-genDef.
-genSpecifier TYPE: int.
-newType.
-genDecList.
-genDec.
-genVarDec.
-newFieldList name: i.
-newItem.
-copyType.
-newType.
-findTableItem.
-searchTableItem.
-getHashHead.
-addTableItem.
-getScopeHead.
-setScopeHead.
-getHashHead.
-setHashHead.
-deleteType.
-genStmtList.
-genStmt.
-genExp.
-genExp.
-genExp.
-searchTableItem.
-getHashHead.
-structDef.
-copyType.
-copyType.
-genExp.
-newType.
 Error type 12 at Line 4: "1.5" is not an integer.
-deleteType.
-deleteType.
-deleteType.
-genExp.
-newType.
-checkType.
 Error type 5 at Line 4: Type mismatched for assignment.
-deleteType.
-clearScope.
-getScopeHead.
-deleteTableItem.
-getHashHead.
-setHashHead.
-deleteItem.
-deleteFieldList.
-deleteType.
-deleteType.
-reduceDepth.
-deleteType.
-start tranverse Specifier.
-start tranverse TYPE.
-start tranverse FunDec.
-start tranverse ID.
-start tranverse LP.
-start tranverse RP.
-start tranverse CompSt.
-start tranverse LC.
-start tranverse DefList.
-start tranverse Def.
-start tranverse Specifier.
-start tranverse TYPE.
-start tranverse DecList.
-start tranverse Dec.
-start tranverse VarDec.
-start tranverse VarDec.
-start tranverse ID.
-start tranverse LB.
-start tranverse INT.
-start tranverse RB.
-start tranverse SEMI.
-start tranverse StmtList.
-start tranverse Stmt.
-start tranverse Exp.
-start tranverse Exp.
-start tranverse Exp.
-start tranverse ID.
-start tranverse LB.
-start tranverse Exp.
-start tranverse FLOAT.
-start tranverse RB.
-start tranverse ASSIGNOP.
-start tranverse Exp.
-start tranverse INT.
-start tranverse SEMI.
-start tranverse RC.
-deleteTable.
-deleteHashTable.
-deleteItem.
-deleteFieldList.
-deleteType.
-deleteType.
-deleteScope.
+   LP
+        RP
+      CompSt (2)
+        LC
+        DefList (3)
+          Def (3)
+            Specifier (3)
+              TYPE: int
+            DecList (3)
+              Dec (3)
+                VarDec (3)
+                  VarDec (3)
+                    ID: i
+                  LB
+                  INT: 10
+                  RB
+            SEMI
+        StmtList (4)
+          Stmt (4)
+            Exp (4)
+              Exp (4)
+                Exp (4)
+                  ID: i
+                LB
+                Exp (4)
+                  FLOAT: 1.500000
+                RB
+              ASSIGNOP
+              Exp (4)
+                INT: 10
+            SEMI
+        RC
