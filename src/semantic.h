@@ -11,7 +11,7 @@ typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
 typedef struct TableItem_* TableItem;
 typedef struct HashTable_* HashTable;
-typedef struct Stack_*     Stack;
+typedef struct Scope_*     Scope;
 typedef struct Table_*     Table;
 typedef struct Function_*  Function;
 
@@ -24,13 +24,6 @@ struct FieldList_
     FieldList tail;
 };
 
-struct Function_
-{
-    int argc;
-    FieldList argv;
-    Type returnType;
-};
-
 struct Type_
 {
     enum { BASIC, ARRAY, STRUCTURE, FUNCTION} kind;
@@ -38,8 +31,8 @@ struct Type_
     {
         int basic;
         struct { Type elem; int size; } array;
-        FieldList structure;
-        Function function;
+        struct { char* name; FieldList fieldList; } structure;
+        struct { int argc; FieldList argv; Type rType; } function;
     } u;
 };
 
@@ -47,8 +40,8 @@ struct TableItem_
 {
     int depth;
     FieldList fieldList;
-    TableItem nextStack;
-    TableItem nextHash;
+    TableItem sameScope;
+    TableItem sameHash;
 };
 
 struct HashTable_
@@ -56,30 +49,28 @@ struct HashTable_
     TableItem* hashArray;
 };
 
-struct Stack_
+struct Scope_
 {
-    TableItem* stackArray;
+    TableItem* scopeList;
     int depth;
 };
 
 struct Table_
 {
     HashTable hashTable;
-    Stack stack;
-    int anonyNum;
+    Scope scope;
+    int anonymousNum;
 };
 
 Type newType(int kind, ...);
 Type copyType(Type type);
 void deleteType(Type type);
 bool checkType(Type t1, Type t2);
-void printType(Type type);
 
 FieldList newFieldList(char* name, Type type);
 FieldList copyFieldList(FieldList fieldList);
 void deleteFieldList(FieldList fieldList);
 void setFieldListName(FieldList fieldList, char* name);
-void printFieldList(FieldList fieldList);
 
 TableItem newItem(int depth, FieldList fieldList);
 void deleteItem(TableItem item);
@@ -90,21 +81,20 @@ void deleteHashTable(HashTable hashTable);
 TableItem getHashHead(HashTable h, int index);
 void setHashHead(HashTable h, int index, TableItem item);
 
-Stack newStack();
-void deleteStack(Stack stack);
-void increDepth(Stack stack);
-void reduceDepth(Stack stack);
-TableItem getStackHead(Stack stack);
-void setStackHead(Stack stack, TableItem item);
+Scope newScope();
+void deleteScope(Scope scope);
+void incrDepth(Scope scope);
+void reduceDepth(Scope scope);
+TableItem getScopeHead(Scope scope);
+void setScopeHead(Scope scope, TableItem item);
 
 Table initTable();
 void deleteTable(Table table);
 TableItem searchTableItem(Table table, char* name);
-bool checkTableItem(Table table, TableItem item);
+bool findTableItem(Table table, TableItem item);
 void addTableItem(Table table, TableItem item);
 void deleteTableItem(Table table, TableItem item);
-void clearCurDepthStackList(Table table);
-void printTable(Table table);
+void clearScope(Table table);
 
 void tranverseTree(Node* node);
 void genExtDef(Node* node);

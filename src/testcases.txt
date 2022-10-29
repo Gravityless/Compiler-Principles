@@ -1,0 +1,39 @@
+case 4:
+int func(int i)
+{
+    return i;
+}
+
+int func()
+{
+    return 0;
+}
+
+int main()
+{
+}
+
+case 13:
+struct Position
+{
+    float x, y;
+};
+
+int main()
+{
+    int i;
+    i.x;
+}
+
+case 14:
+struct Position
+{
+    float x, y;
+};
+
+int main()
+{
+    struct Position p;
+    if (p.n == 3.7)
+        return 0;
+}

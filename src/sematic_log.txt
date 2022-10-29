@@ -1,7 +1,7 @@
 generate tree.
 initTable.
 newHashTable.
-newStack.
+newScope.
 start tranverse Program.
 start tranverse ExtDefList.
 start tranverse ExtDef.
@@ -13,16 +13,16 @@ copyType.
 newType.
 newFieldList name: main.
 newItem.
-checkTableItem.
+findTableItem.
 searchTableItem.
 getHashHead.
 addTableItem.
-getStackHead.
-setStackHead.
+getScopeHead.
+setScopeHead.
 getHashHead.
 setHashHead.
 genCompSt.
-increDepth.
+incrDepth.
 genDefList.
 genDef.
 genSpecifier TYPE: int.
@@ -33,12 +33,13 @@ genVarDec.
 newFieldList name: i.
 newItem.
 copyType.
-checkTableItem.
+newType.
+findTableItem.
 searchTableItem.
 getHashHead.
 addTableItem.
-getStackHead.
-setStackHead.
+getScopeHead.
+setScopeHead.
 getHashHead.
 setHashHead.
 deleteType.
@@ -46,22 +47,31 @@ genStmtList.
 genStmt.
 genExp.
 genExp.
-newType.
 genExp.
 searchTableItem.
 getHashHead.
 structDef.
 copyType.
-Error type 6 at Line 4: The left-hand side of an assignment must be avariable.
+copyType.
+genExp.
+newType.
+Error type 12 at Line 4: "1.5" is not an integer.
 deleteType.
 deleteType.
-clearCurDepthStackList.
-getStackHead.
+deleteType.
+genExp.
+newType.
+checkType.
+Error type 5 at Line 4: Type mismatched for assignment.
+deleteType.
+clearScope.
+getScopeHead.
 deleteTableItem.
 getHashHead.
 setHashHead.
 deleteItem.
 deleteFieldList.
+deleteType.
 deleteType.
 reduceDepth.
 deleteType.
@@ -80,16 +90,25 @@ start tranverse TYPE.
 start tranverse DecList.
 start tranverse Dec.
 start tranverse VarDec.
+start tranverse VarDec.
 start tranverse ID.
+start tranverse LB.
+start tranverse INT.
+start tranverse RB.
 start tranverse SEMI.
 start tranverse StmtList.
 start tranverse Stmt.
 start tranverse Exp.
 start tranverse Exp.
-start tranverse INT.
-start tranverse ASSIGNOP.
 start tranverse Exp.
 start tranverse ID.
+start tranverse LB.
+start tranverse Exp.
+start tranverse FLOAT.
+start tranverse RB.
+start tranverse ASSIGNOP.
+start tranverse Exp.
+start tranverse INT.
 start tranverse SEMI.
 start tranverse RC.
 deleteTable.
@@ -98,4 +117,4 @@ deleteItem.
 deleteFieldList.
 deleteType.
 deleteType.
-deleteStack.
+deleteScope.

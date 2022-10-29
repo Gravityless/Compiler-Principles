@@ -1,10 +1,14 @@
 #include "semantic.h"
 
+#define DEBUG 1
+
 Table table = NULL;
 
 Type newType(int kind, ...)
 {
+#if DEBUG
     printf("newType.\n");
+#endif
     Type t = (Type)malloc(sizeof(struct Type_));
     t->kind = kind;
     va_list ap;
@@ -19,15 +23,13 @@ Type newType(int kind, ...)
         t->u.array.size = va_arg(ap, int);
         break;
     case STRUCTURE:
-        t->u.structure = (FieldList)malloc(sizeof(struct FieldList_));
-        t->u.structure->name = va_arg(ap, char *);
-        t->u.structure->tail = va_arg(ap, FieldList);
+        t->u.structure.name = va_arg(ap, char *);
+        t->u.structure.fieldList = va_arg(ap, FieldList);
         break;
     case FUNCTION:
-        t->u.function = (Function)malloc(sizeof(struct Function_));
-        t->u.function->argc = va_arg(ap, int);
-        t->u.function->argv = va_arg(ap, FieldList);
-        t->u.function->returnType = va_arg(ap, Type);
+        t->u.function.argc = va_arg(ap, int);
+        t->u.function.argv = va_arg(ap, FieldList);
+        t->u.function.rType = va_arg(ap, Type);
         break;
     }
     va_end(ap);
@@ -36,7 +38,9 @@ Type newType(int kind, ...)
 
 Type copyType(Type type)
 {
+#if DEBUG
     printf("copyType.\n");
+#endif
     if (type == NULL)
         return NULL;
     Type t = (Type)malloc(sizeof(struct Type_));
@@ -51,15 +55,13 @@ Type copyType(Type type)
         t->u.array.size = type->u.array.size;
         break;
     case STRUCTURE:
-        t->u.structure = (FieldList)malloc(sizeof(struct FieldList_));
-        t->u.structure->name = newString(type->u.structure->name);
-        t->u.structure->tail = copyFieldList(type->u.structure->tail);
+        t->u.structure.name = newString(type->u.structure.name);
+        t->u.structure.fieldList = copyFieldList(type->u.structure.fieldList);
         break;
     case FUNCTION:
-        t->u.function = (Function)malloc(sizeof(struct Function_));
-        t->u.function->argc = type->u.function->argc;
-        t->u.function->argv = copyFieldList(type->u.function->argv);
-        t->u.function->returnType = copyType(type->u.function->returnType);
+        t->u.function.argc = type->u.function.argc;
+        t->u.function.argv = copyFieldList(type->u.function.argv);
+        t->u.function.rType = copyType(type->u.function.rType);
         break;
     }
     return t;
@@ -67,7 +69,10 @@ Type copyType(Type type)
 
 void deleteType(Type type)
 {
+#if DEBUG
     printf("deleteType.\n");
+#endif
+    if (type == NULL) return;
     FieldList t = NULL;
     switch (type->kind)
     {
@@ -77,27 +82,25 @@ void deleteType(Type type)
         deleteType(type->u.array.elem);
         break;
     case STRUCTURE:
-        if (type->u.structure->name)
-            free(type->u.structure->name);
-        t = type->u.structure->tail;
+        if (type->u.structure.name)
+            free(type->u.structure.name);
+        t = type->u.structure.fieldList;
         while (t)
         {
             FieldList fieldList = t;
             t = t->tail;
             deleteFieldList(fieldList);
         }
-        free(type->u.structure);
         break;
     case FUNCTION:
-        deleteType(type->u.function->returnType);
-        t = type->u.function->argv;
+        deleteType(type->u.function.rType);
+        t = type->u.function.argv;
         while (t)
         {
             FieldList fieldList = t;
             t = t->tail;
             deleteFieldList(fieldList);
         }
-        free(type->u.function);
         break;
     }
     free(type);
@@ -105,7 +108,11 @@ void deleteType(Type type)
 
 bool checkType(Type t1, Type t2)
 {
+#if DEBUG
     printf("checkType.\n");
+#endif
+    if (t1 == NULL || t1 == NULL)
+        return false;
     if (t1->kind != t2->kind)
         return false;
 
@@ -116,7 +123,7 @@ bool checkType(Type t1, Type t2)
     case ARRAY:
         return checkType(t1->u.array.elem, t2->u.array.elem);
     case STRUCTURE:
-        return !strcmp(t1->u.structure->name, t2->u.structure->name);
+        return !strcmp(t1->u.structure.name, t2->u.structure.name);
     case FUNCTION:
         return false;
     }
@@ -124,47 +131,11 @@ bool checkType(Type t1, Type t2)
     return false;
 }
 
-void printType(Type type)
-{
-    printf("printType.\n");
-    if (type == NULL)
-    {
-        printf("type is NULL.\n");
-        return;
-    }
-
-    printf("type kind: %d\n", type->kind);
-    switch (type->kind)
-    {
-    case BASIC:
-        printf("type basic: %d\n", type->u.basic);
-        break;
-    case ARRAY:
-        printf("array size: %d\n", type->u.array.size);
-        printType(type->u.array.elem);
-        break;
-    case STRUCTURE:
-        if (!type->u.structure->name)
-            printf("struct name is NULL\n");
-        else
-        {
-            printf("struct name is %s\n", type->u.structure->name);
-        }
-        printFieldList(type->u.structure->tail);
-        break;
-    case FUNCTION:
-        printf("function argc is %d\n", type->u.function->argc);
-        printf("function args:\n");
-        printFieldList(type->u.function->argv);
-        printf("function return type:\n");
-        printType(type->u.function->returnType);
-        break;
-    }
-}
-
 FieldList newFieldList(char *name, Type type)
 {
+#if DEBUG
     printf("newFieldList name: %s.\n", name);
+#endif
     FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
     p->name = newString(name);
     p->type = type;
@@ -174,7 +145,9 @@ FieldList newFieldList(char *name, Type type)
 
 FieldList copyFieldList(FieldList fieldList)
 {
+#if DEBUG
     printf("copyFieldList.\n");
+#endif
     FieldList p = NULL, q = NULL;
     FieldList t = fieldList;
     p = newFieldList(t->name, copyType(t->type));
@@ -192,7 +165,9 @@ FieldList copyFieldList(FieldList fieldList)
 
 void deleteFieldList(FieldList fieldList)
 {
+#if DEBUG
     printf("deleteFieldList.\n");
+#endif
     if (fieldList->name)
         free(fieldList->name);
     if (fieldList->type)
@@ -202,40 +177,32 @@ void deleteFieldList(FieldList fieldList)
 
 void setFieldListName(FieldList fieldList, char *name)
 {
+#if DEBUG
     printf("setFieldListName.\n");
+#endif
     if (fieldList->name != NULL)
         free(fieldList->name);
     fieldList->name = newString(name);
 }
 
-void printFieldList(FieldList fieldList)
-{
-    printf("printFieldList.\n");
-    if (fieldList == NULL)
-        printf("FieldList is NULL\n");
-    else
-    {
-        printf("FieldList name is: %s\n", fieldList->name);
-        printf("FieldList Type:\n");
-        printType(fieldList->type);
-        printFieldList(fieldList->tail);
-    }
-}
-
 TableItem newItem(int depth, FieldList fieldList)
 {
+#if DEBUG
     printf("newItem.\n");
+#endif
     TableItem t = (TableItem)malloc(sizeof(struct TableItem_));
     t->depth = depth;
     t->fieldList = fieldList;
-    t->nextHash = NULL;
-    t->nextStack = NULL;
+    t->sameHash = NULL;
+    t->sameScope = NULL;
     return t;
 }
 
 void deleteItem(TableItem item)
 {
+#if DEBUG
     printf("deleteItem.\n");
+#endif
     if (item->fieldList != NULL)
         deleteFieldList(item->fieldList);
     free(item);
@@ -243,7 +210,9 @@ void deleteItem(TableItem item)
 
 HashTable newHashTable()
 {
+#if DEBUG
     printf("newHashTable.\n");
+#endif
     HashTable t = (HashTable)malloc(sizeof(struct HashTable_));
     t->hashArray = (TableItem *)malloc(sizeof(TableItem) * HASH_TABLE_SIZE);
 
@@ -256,14 +225,16 @@ HashTable newHashTable()
 
 void deleteHashTable(HashTable hashTable)
 {
+#if DEBUG
     printf("deleteHashTable.\n");
+#endif
     for (int i = 0; i < HASH_TABLE_SIZE; i++)
     {
         TableItem t = hashTable->hashArray[i];
         while (t)
         {
             TableItem item = t;
-            t = t->nextHash;
+            t = t->sameHash;
             deleteItem(item);
         }
     }
@@ -273,80 +244,102 @@ void deleteHashTable(HashTable hashTable)
 
 TableItem getHashHead(HashTable h, int index)
 {
+#if DEBUG
     printf("getHashHead.\n");
+#endif
     return h->hashArray[index];
 }
 void setHashHead(HashTable h, int index, TableItem item)
 {
+#if DEBUG
     printf("setHashHead.\n");
+#endif
     h->hashArray[index] = item;
 }
 
-Stack newStack()
+Scope newScope()
 {
-    printf("newStack.\n");
-    Stack t = (Stack)malloc(sizeof(struct Stack_));
-    t->stackArray = (TableItem *)malloc(sizeof(TableItem) * HASH_TABLE_SIZE);
+#if DEBUG
+    printf("newScope.\n");
+#endif
+    Scope t = (Scope)malloc(sizeof(struct Scope_));
+    t->scopeList = (TableItem *)malloc(sizeof(TableItem) * HASH_TABLE_SIZE);
     for (int i = 0; i < HASH_TABLE_SIZE; i++)
     {
-        t->stackArray[i] = NULL;
+        t->scopeList[i] = NULL;
     }
     t->depth = 0;
     return t;
 }
 
-void deleteStack(Stack stack)
+void deleteScope(Scope scope)
 {
-    printf("deleteStack.\n");
-    free(stack->stackArray);
-    free(stack);
+#if DEBUG
+    printf("deleteScope.\n");
+#endif
+    free(scope->scopeList);
+    free(scope);
 }
 
-void increDepth(Stack stack)
+void incrDepth(Scope scope)
 {
-    printf("increDepth.\n");
-    stack->depth++;
+#if DEBUG
+    printf("incrDepth.\n");
+#endif
+    scope->depth++;
 }
 
-void reduceDepth(Stack stack)
+void reduceDepth(Scope scope)
 {
+#if DEBUG
     printf("reduceDepth.\n");
-    stack->depth--;
+#endif
+    scope->depth--;
 }
 
-TableItem getStackHead(Stack stack)
+TableItem getScopeHead(Scope scope)
 {
-    printf("getStackHead.\n");
-    return stack->stackArray[stack->depth];
+#if DEBUG
+    printf("getScopeHead.\n");
+#endif
+    return scope->scopeList[scope->depth];
 }
 
-void setStackHead(Stack stack, TableItem item)
+void setScopeHead(Scope scope, TableItem item)
 {
-    printf("setStackHead.\n");
-    stack->stackArray[stack->depth] = item;
+#if DEBUG
+    printf("setScopeHead.\n");
+#endif
+    scope->scopeList[scope->depth] = item;
 }
 
 Table initTable()
 {
+#if DEBUG
     printf("initTable.\n");
+#endif
     Table t = (Table)malloc(sizeof(struct Table_));
     t->hashTable = newHashTable();
-    t->stack = newStack();
-    t->anonyNum = 0;
+    t->scope = newScope();
+    t->anonymousNum = 0;
     return t;
 }
 
 void deleteTable(Table table)
 {
+#if DEBUG
     printf("deleteTable.\n");
+#endif
     deleteHashTable(table->hashTable);
-    deleteStack(table->stack);
+    deleteScope(table->scope);
     free(table);
 }
 
 TableItem searchTableItem(Table table, char *name)
 {
+#if DEBUG
     printf("searchTableItem.\n");
+#endif
     TableItem t = getHashHead(table->hashTable, getHashCode(name));
     if (t == NULL)
         return NULL;
@@ -354,14 +347,16 @@ TableItem searchTableItem(Table table, char *name)
     {
         if (!strcmp(t->fieldList->name, name))
             return t;
-        t = t->nextHash;
+        t = t->sameHash;
     }
     return NULL;
 }
 
-bool checkTableItem(Table table, TableItem item)
+bool findTableItem(Table table, TableItem item)
 {
-    printf("checkTableItem.\n");
+#if DEBUG
+    printf("findTableItem.\n");
+#endif
     TableItem t = searchTableItem(table, item->fieldList->name);
     if (t == NULL)
         return false;
@@ -372,34 +367,39 @@ bool checkTableItem(Table table, TableItem item)
             if (t->fieldList->type->kind == STRUCTURE ||
                 item->fieldList->type->kind == STRUCTURE)
                 return true;
-            if (t->depth == table->stack->depth)
+            if (t->depth == table->scope->depth)
                 return true;
         }
-        t = t->nextHash;
+        t = t->sameHash;
     }
     return false;
 }
 
 void addTableItem(Table table, TableItem item)
 {
+#if DEBUG
     printf("addTableItem.\n");
+#endif
     int hashCode = getHashCode(item->fieldList->name);
     HashTable h = table->hashTable;
-    Stack s = table->stack;
-    item->nextStack = getStackHead(s);
-    setStackHead(s, item);
-    item->nextHash = getHashHead(h, hashCode);
+    Scope s = table->scope;
+    item->sameScope = getScopeHead(s);
+    setScopeHead(s, item);
+    item->sameHash = getHashHead(h, hashCode);
     setHashHead(h, hashCode, item);
 }
 
 void deleteTableItem(Table table, TableItem item)
 {
+#if DEBUG
     printf("deleteTableItem.\n");
+#endif
+    assert(item != NULL && item->fieldList != NULL && item->fieldList->name != NULL);
     int hashCode = getHashCode(item->fieldList->name);
     HashTable h = table->hashTable;
-    Stack s = table->stack;
+    Scope s = table->scope;
     if (item == getHashHead(h, hashCode))
-        setHashHead(h, hashCode, item->nextHash);
+        setHashHead(h, hashCode, item->sameHash);
     else
     {
         TableItem p = getHashHead(h, hashCode);
@@ -407,62 +407,44 @@ void deleteTableItem(Table table, TableItem item)
         while (p != item)
         {
             q = p;
-            p = p->nextStack;
+            p = p->sameScope;
         }
-        q->nextStack = p->nextStack;
+        q->sameScope = p->sameScope;
     }
     deleteItem(item);
 }
 
 bool structDef(TableItem item)
 {
+#if DEBUG
     printf("structDef.\n");
-    if (item == NULL || item->fieldList->type->kind != STRUCTURE)
+#endif
+    if (item == NULL || item->fieldList->type->kind != STRUCTURE || item->fieldList->type->u.structure.name)
         return false;
     return true;
 }
 
-void clearCurDepthStackList(Table table)
+void clearScope(Table table)
 {
-    printf("clearCurDepthStackList.\n");
-    Stack s = table->stack;
-    TableItem t = getStackHead(s);
+#if DEBUG
+    printf("clearScope.\n");
+#endif
+    Scope s = table->scope;
+    TableItem t = getScopeHead(s);
     while (t)
     {
         TableItem p = t;
-        t = t->nextStack;
+        t = t->sameScope;
         deleteTableItem(table, p);
     }
     reduceDepth(s);
 }
 
-void printTable(Table table)
-{
-    printf("----------------hash_table----------------\n");
-    for (int i = 0; i < HASH_TABLE_SIZE; i++)
-    {
-        TableItem item = getHashHead(table->hashTable, i);
-        if (item)
-        {
-            printf("[%d]", i);
-            while (item)
-            {
-                printf(" -> name: %s depth: %d\n", item->fieldList->name,
-                       item->depth);
-                printf("========FiledList========\n");
-                printFieldList(item->fieldList);
-                printf("===========End===========\n");
-                item = item->nextHash;
-            }
-            printf("\n");
-        }
-    }
-    printf("-------------------end--------------------\n");
-}
-
 void genExtDef(Node *node)
 {
+#if DEBUG
     printf("genExtDef.\n");
+#endif
     Type specifierType = genSpecifier(node->child);
     char *nextType = node->child->sibling->type;
 
@@ -483,12 +465,14 @@ void genExtDef(Node *node)
 // TODO: line 398 if?
 void genExtDecList(Node *node, Type specifier)
 {
+#if DEBUG
     printf("genExtDecList.\n");
+#endif
     Node *pNode = node;
     while (pNode)
     {
         TableItem pItem = genVarDec(pNode->child, specifier);
-        if (checkTableItem(table, pItem))
+        if (findTableItem(table, pItem))
         {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "Redefine variable \"%s\".", pItem->fieldList->name);
@@ -511,7 +495,9 @@ Type genSpecifier(Node *node)
     Node *pNode = node->child;
     if (!strcmp(pNode->type, "TYPE"))
     {
+    #if DEBUG
         printf("genSpecifier TYPE: %s.\n", pNode->val);
+    #endif
         if (!strcmp(pNode->val, "int"))
             return newType(BASIC, 0);
         else
@@ -519,7 +505,9 @@ Type genSpecifier(Node *node)
     }
     else
     {
+    #if DEBUG
         printf("genSpecifier TYPE: struct.\n");
+    #endif
         return genStructSpecifier(pNode);
     }
 }
@@ -527,13 +515,15 @@ Type genSpecifier(Node *node)
 // TODO: line 435 where is LB?
 Type genStructSpecifier(Node *node)
 {
+#if DEBUG
     printf("genStructSpecifier.\n");
+#endif
     Type result = NULL;
     Node *pNode = node->child->sibling;
 
     if (strcmp(pNode->type, "Tag"))
     {
-        TableItem item = newItem(table->stack->depth,
+        TableItem item = newItem(table->scope->depth,
                                  newFieldList("", newType(STRUCTURE, NULL, NULL)));
         if (!strcmp(pNode->type, "OptTag"))
         {
@@ -542,15 +532,15 @@ Type genStructSpecifier(Node *node)
         }
         else
         {
-            table->anonyNum++;
+            table->anonymousNum++;
             char name[40] = {0};
-            sprintf(name, "%d", table->anonyNum);
+            sprintf(name, "%d", table->anonymousNum);
             setFieldListName(item->fieldList, name);
         }
 
         if (!strcmp(pNode->sibling->type, "DefList"))
             genDefList(pNode->sibling, item);
-        if (checkTableItem(table, item))
+        if (findTableItem(table, item))
         {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "Duplicated name \"%s\".", item->fieldList->name);
@@ -560,7 +550,7 @@ Type genStructSpecifier(Node *node)
         else
         {
             result = newType(STRUCTURE, newString(item->fieldList->name),
-                             copyFieldList(item->fieldList->type->u.structure->tail));
+                             copyFieldList(item->fieldList->type->u.structure.fieldList));
             if (!strcmp(node->child->sibling->type, "OptTag"))
                 addTableItem(table, item);
             else
@@ -579,7 +569,7 @@ Type genStructSpecifier(Node *node)
         else
         {
             result = newType(STRUCTURE, newString(item->fieldList->name),
-                             copyFieldList(item->fieldList->type->u.structure->tail));
+                             copyFieldList(item->fieldList->type->u.structure.fieldList));
         }
     }
 
@@ -588,11 +578,13 @@ Type genStructSpecifier(Node *node)
 
 TableItem genVarDec(Node *node, Type specifier)
 {
+#if DEBUG
     printf("genVarDec.\n");
+#endif
     Node *id = node;
     while (id->child != NULL)
         id = id->child;
-    TableItem item = newItem(table->stack->depth, newFieldList(id->val, NULL));
+    TableItem item = newItem(table->scope->depth, newFieldList(id->val, NULL));
     if (!strcmp(node->child->type, "ID"))
         item->fieldList->type = copyType(specifier);
     else
@@ -611,12 +603,14 @@ TableItem genVarDec(Node *node, Type specifier)
 
 void genFunDec(Node *node, Type returnType)
 {
+#if DEBUG
     printf("genFunDec.\n");
-    TableItem item = newItem(table->stack->depth, newFieldList(node->child->val,
+#endif
+    TableItem item = newItem(table->scope->depth, newFieldList(node->child->val,
         newType(FUNCTION, 0, NULL, copyType(returnType))));
     if (!strcmp(node->child->sibling->sibling->type, "VarList"))
         genVarList(node->child->sibling->sibling, item);
-    if (checkTableItem(table, item))
+    if (findTableItem(table, item))
     {
         char msg[MAX_MSG_LENGTH] = {0};
         sprintf(msg, "Redefine function \"%s\".", item->fieldList->name);
@@ -631,15 +625,17 @@ void genFunDec(Node *node, Type returnType)
 
 void genVarList(Node *node, TableItem func)
 {
+#if DEBUG
     printf("genVarList.\n");
-    increDepth(table->stack);
+#endif
+    incrDepth(table->scope);
     int argc = 0;
     Node *pNode = node->child;
     FieldList fieldList = NULL;
 
     FieldList paramDec = genParamDec(pNode);
-    func->fieldList->type->u.function->argv = copyFieldList(paramDec);
-    fieldList = func->fieldList->type->u.function->argv;
+    func->fieldList->type->u.function.argv = copyFieldList(paramDec);
+    fieldList = func->fieldList->type->u.function.argv;
     argc++;
 
     while (pNode->sibling)
@@ -654,18 +650,20 @@ void genVarList(Node *node, TableItem func)
         }
     }
 
-    func->fieldList->type->u.function->argc = argc;
-    reduceDepth(table->stack);
+    func->fieldList->type->u.function.argc = argc;
+    reduceDepth(table->scope);
 }
 
 FieldList genParamDec(Node *node)
 {
+#if DEBUG
     printf("genParamDec.\n");
+#endif
     Type specifierType = genSpecifier(node->child);
     TableItem item = genVarDec(node->child->sibling, specifierType);
     if (specifierType)
         deleteType(specifierType);
-    if (checkTableItem(table, item))
+    if (findTableItem(table, item))
     {
         char msg[MAX_MSG_LENGTH] = {0};
         sprintf(msg, "Redefine variable \"%s\".", item->fieldList->name);
@@ -682,8 +680,10 @@ FieldList genParamDec(Node *node)
 
 void genCompSt(Node *node, Type returnType)
 {
+#if DEBUG
     printf("genCompSt.\n");
-    increDepth(table->stack);
+#endif
+    incrDepth(table->scope);
     Node *pNode = node->child->sibling;
     if (!strcmp(pNode->type, "DefList"))
     {
@@ -695,12 +695,14 @@ void genCompSt(Node *node, Type returnType)
         genStmtList(pNode, returnType);
     }
 
-    clearCurDepthStackList(table);
+    clearScope(table);
 }
 
 void genStmtList(Node *node, Type returnType)
 {
+#if DEBUG
     printf("genStmtList.\n");
+#endif
     while (node)
     {
         genStmt(node->child, returnType);
@@ -710,7 +712,9 @@ void genStmtList(Node *node, Type returnType)
 
 void genStmt(Node *node, Type returnType)
 {
+#if DEBUG
     printf("genStmt.\n");
+#endif
     Type expType = NULL;
 
     if (!strcmp(node->child->type, "Exp"))
@@ -743,7 +747,9 @@ void genStmt(Node *node, Type returnType)
 
 void genDefList(Node *node, TableItem structInfo)
 {
+#if DEBUG
     printf("genDefList.\n");
+#endif
     while (node)
     {
         genDef(node->child, structInfo);
@@ -753,7 +759,9 @@ void genDefList(Node *node, TableItem structInfo)
 
 void genDef(Node *node, TableItem structInfo)
 {
+#if DEBUG
     printf("genDef.\n");
+#endif
     Type dectype = genSpecifier(node->child);
     genDecList(node->child->sibling, dectype, structInfo);
     if (dectype)
@@ -762,7 +770,9 @@ void genDef(Node *node, TableItem structInfo)
 
 void genDecList(Node *node, Type specifier, TableItem structInfo)
 {
+#if DEBUG
     printf("genDecList.\n");
+#endif
     Node *pNode = node;
     while (pNode)
     {
@@ -776,18 +786,20 @@ void genDecList(Node *node, Type specifier, TableItem structInfo)
 
 void genDec(Node *node, Type specifier, TableItem structInfo)
 {
+#if DEBUG
     printf("genDec.\n");
+#endif
     if (node->child->sibling == NULL)
     {
         if (structInfo != NULL)
         {
             TableItem decitem = genVarDec(node->child, specifier);
             FieldList payload = decitem->fieldList;
-            FieldList structField = structInfo->fieldList->type->u.structure->tail;
+            FieldList fieldList = structInfo->fieldList->type->u.structure.fieldList;
             FieldList last = NULL;
-            while (structField != NULL)
+            while (fieldList != NULL)
             {
-                if (!strcmp(payload->name, structField->name))
+                if (!strcmp(payload->name, fieldList->name))
                 {
                     char msg[MAX_MSG_LENGTH] = {0};
                     sprintf(msg, "Redefined field \"%s\".",
@@ -798,13 +810,13 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
                 }
                 else
                 {
-                    last = structField;
-                    structField = structField->tail;
+                    last = fieldList;
+                    fieldList = fieldList->tail;
                 }
             }
             if (last == NULL)
             {
-                structInfo->fieldList->type->u.structure->tail =
+                structInfo->fieldList->type->u.structure.fieldList =
                     copyFieldList(decitem->fieldList);
             }
             else
@@ -816,7 +828,7 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
         else
         {
             TableItem decitem = genVarDec(node->child, specifier);
-            if (checkTableItem(table, decitem))
+            if (findTableItem(table, decitem))
             {
                 char msg[MAX_MSG_LENGTH] = {0};
                 sprintf(msg, "Redefined variable \"%s\".",
@@ -841,7 +853,7 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
         {
             TableItem decitem = genVarDec(node->child, specifier);
             Type exptype = genExp(node->child->sibling->sibling);
-            if (checkTableItem(table, decitem))
+            if (findTableItem(table, decitem))
             {
                 char msg[MAX_MSG_LENGTH] = {0};
                 sprintf(msg, "Redefined variable \"%s\".",
@@ -873,7 +885,9 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
 
 Type genExp(Node *node)
 {
+#if DEBUG
     printf("genExp.\n");
+#endif
     Node *t = node->child;
     if (!strcmp(t->type, "Exp"))
     {
@@ -980,7 +994,7 @@ Type genExp(Node *node)
                 Type p1 = genExp(t);
                 Type returnType = NULL;
                 if (!p1 || p1->kind != STRUCTURE ||
-                    !p1->u.structure->name)
+                    !p1->u.structure.name)
                 {
                     Error(NOT_STRUCT, t->lineno, "Illegal use of \".\".");
                     if (p1)
@@ -989,23 +1003,23 @@ Type genExp(Node *node)
                 else
                 {
                     Node *ref_id = t->sibling->sibling;
-                    FieldList structfield = p1->u.structure->tail;
-                    while (structfield != NULL)
+                    FieldList fieldList = p1->u.structure.fieldList;
+                    while (fieldList != NULL)
                     {
-                        if (!strcmp(structfield->name, ref_id->val))
+                        if (!strcmp(fieldList->name, ref_id->val))
                         {
                             break;
                         }
-                        structfield = structfield->tail;
+                        fieldList = fieldList->tail;
                     }
-                    if (structfield == NULL)
+                    if (fieldList == NULL)
                     {
                         printf("Error type %d at Line %d: %s.\n", 14, t->lineno,
-                               "NONEXISTFIELD");
+                               "non-existed field");
                     }
                     else
                     {
-                        returnType = copyType(structfield->type);
+                        returnType = copyType(fieldList->type);
                     }
                 }
                 if (p1)
@@ -1055,21 +1069,21 @@ Type genExp(Node *node)
         else if (!strcmp(t->sibling->sibling->type, "Args"))
         {
             genArgs(t->sibling->sibling, funcInfo);
-            return copyType(funcInfo->fieldList->type->u.function->returnType);
+            return copyType(funcInfo->fieldList->type->u.function.rType);
         }
 
         else
         {
-            if (funcInfo->fieldList->type->u.function->argc != 0)
+            if (funcInfo->fieldList->type->u.function.argc != 0)
             {
                 char msg[MAX_MSG_LENGTH] = {0};
                 sprintf(msg,
                         "too few arguments to function \"%s\", except %d args.",
                         funcInfo->fieldList->name,
-                        funcInfo->fieldList->type->u.function->argc);
+                        funcInfo->fieldList->type->u.function.argc);
                 Error(ARG_INCOMPATIBLE, node->lineno, msg);
             }
-            return copyType(funcInfo->fieldList->type->u.function->returnType);
+            return copyType(funcInfo->fieldList->type->u.function.rType);
         }
     }
     else if (!strcmp(t->type, "ID"))
@@ -1102,9 +1116,11 @@ Type genExp(Node *node)
 
 void genArgs(Node *node, TableItem funcInfo)
 {
+#if DEBUG
     printf("genArgs.\n");
+#endif
     Node *pNode = node;
-    FieldList arg = funcInfo->fieldList->type->u.function->argv;
+    FieldList arg = funcInfo->fieldList->type->u.function.argv;
     while (pNode)
     {
         if (arg == NULL)
@@ -1112,7 +1128,7 @@ void genArgs(Node *node, TableItem funcInfo)
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(
                 msg, "too many arguments to function \"%s\", except %d args.",
-                funcInfo->fieldList->name, funcInfo->fieldList->type->u.function->argc);
+                funcInfo->fieldList->name, funcInfo->fieldList->type->u.function.argc);
             Error(ARG_INCOMPATIBLE, node->lineno, msg);
             break;
         }
@@ -1144,7 +1160,7 @@ void genArgs(Node *node, TableItem funcInfo)
     {
         char msg[MAX_MSG_LENGTH] = {0};
         sprintf(msg, "too few arguments to function \"%s\", except %d args.",
-                funcInfo->fieldList->name, funcInfo->fieldList->type->u.function->argc);
+                funcInfo->fieldList->name, funcInfo->fieldList->type->u.function.argc);
         Error(ARG_INCOMPATIBLE, node->lineno, msg);
     }
 }
@@ -1153,8 +1169,9 @@ void tranverseTree(Node *node)
 {
     if (node == NULL)
         return;
-
+#if DEBUG
     printf("start tranverse %s.\n", node->type);
+#endif
     if (!strcmp(node->type, "ExtDef"))
         genExtDef(node);
     tranverseTree(node->child);
