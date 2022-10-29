@@ -16,8 +16,8 @@ typedef enum SEMERR {
     NOT_FUN,
     NOT_INT,
     NOT_STRUCT,
-    FEILD_UNDEF,
-    FEILD_REDEF,
+    FIELD_UNDEF,
+    FIELD_REDEF,
     STRUCT_REDEF,
     STRUCT_UNDEF,
 } SEMERR;

@@ -62,6 +62,9 @@ struct Table_
     int anonymousNum;
 };
 
+void printType(Type type);
+void printFieldList(FieldList fieldList);
+
 Type newType(int kind, ...);
 Type copyType(Type type);
 void deleteType(Type type);
@@ -74,7 +77,7 @@ void setFieldListName(FieldList fieldList, char* name);
 
 TableItem newItem(int depth, FieldList fieldList);
 void deleteItem(TableItem item);
-bool structDef(TableItem item);
+bool isStructDef(TableItem item);
 
 HashTable newHashTable();
 void deleteHashTable(HashTable hashTable);
@@ -84,36 +87,36 @@ void setHashHead(HashTable h, int index, TableItem item);
 Scope newScope();
 void deleteScope(Scope scope);
 void incrDepth(Scope scope);
-void reduceDepth(Scope scope);
+void decrDepth(Scope scope);
 TableItem getScopeHead(Scope scope);
 void setScopeHead(Scope scope, TableItem item);
 
 Table initTable();
 void deleteTable(Table table);
 TableItem searchTableItem(Table table, char* name);
-bool findTableItem(Table table, TableItem item);
+bool findConflict(Table table, TableItem item);
 void addTableItem(Table table, TableItem item);
 void deleteTableItem(Table table, TableItem item);
 void clearScope(Table table);
 
 void tranverseTree(Node* node);
-void genExtDef(Node* node);
-void genExtDecList(Node* node, Type specifier);
-Type genSpecifier(Node* node);
-Type genStructSpecifier(Node* node);
-TableItem genVarDec(Node* node, Type specifier);
-void genFunDec(Node* node, Type returnType);
-void genVarList(Node* node, TableItem func);
-FieldList genParamDec(Node* node);
-void genCompSt(Node* node, Type returnType);
-void genStmtList(Node* node, Type returnType);
-void genStmt(Node* node, Type returnType);
-void genDefList(Node* node, TableItem structInfo);
-void genDef(Node* node, TableItem structInfo);
-void genDecList(Node* node, Type specifier, TableItem structInfo);
-void genDec(Node* node, Type specifier, TableItem structInfo);
-Type genExp(Node* node);
-void genArgs(Node* node, TableItem funcInfo);
+void ExtDef(Node* node);
+void ExtDecList(Node* node, Type specifier);
+Type Specifier(Node* node);
+Type StructSpecifier(Node* node);
+TableItem VarDec(Node* node, Type specifier);
+void FunDec(Node* node, Type returnType);
+void VarList(Node* node, TableItem func);
+FieldList ParamDec(Node* node);
+void CompSt(Node* node, Type returnType);
+void StmtList(Node* node, Type returnType);
+void Stmt(Node* node, Type returnType);
+void DefList(Node* node, TableItem structInfo);
+void Def(Node* node, TableItem structInfo);
+void DecList(Node* node, Type specifier, TableItem structInfo);
+void Dec(Node* node, Type specifier, TableItem structInfo);
+Type Exp(Node* node);
+void Args(Node* node, TableItem funcInfo);
 
 void semanticAnalysis(Node* node);
 

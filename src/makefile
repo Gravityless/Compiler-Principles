@@ -14,11 +14,6 @@ YFC = $(shell find ./ -name "*.y" | sed s/[^/]*\\.y/syntax.tab.c/)
 LFO = $(LFC:.c=.o)
 YFO = $(YFC:.c=.o)
 
-sematic:
-	flex lexical.l
-	bison -d syntax.y
-	gcc main.c syntax.tab.c node.c semantic.c -lfl -ly -o parser
-
 parser: syntax $(filter-out $(LFO),$(OBJS))
 	$(CC) -o parser $(filter-out $(LFO),$(OBJS)) -lfl -ly
 
@@ -30,6 +25,11 @@ lexical: $(LFILE)
 
 syntax-c: $(YFILE)
 	$(BISON) -o $(YFC) -d -v $(YFILE)
+
+sematic:
+	flex lexical.l
+	bison -d syntax.y
+	gcc main.c syntax.tab.c node.c semantic.c -lfl -ly -o parser
 
 -include $(patsubst %.o, %.d, $(OBJS))
 
