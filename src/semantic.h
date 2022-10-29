@@ -17,6 +17,8 @@ typedef struct Table_*     Table;
 typedef struct Function_*  Function;
 
 extern Table table;
+extern HashTable hashTable;
+extern Scope scope;
 
 struct FieldList_
 {
@@ -68,37 +70,37 @@ void printFieldList(FieldList fieldList);
 
 Type newType(int kind, ...);
 Type copyType(Type type);
-void deleteType(Type type);
+void delType(Type type);
 bool compareType(Type t1, Type t2);
 
 FieldList newFieldList(char* name, Type type);
 FieldList copyFieldList(FieldList fieldList);
-void deleteFieldList(FieldList fieldList);
+void delFieldList(FieldList fieldList);
 void setFieldListName(FieldList fieldList, char* name);
 
 TableItem newItem(int layerDepth, FieldList fieldList);
-void deleteItem(TableItem item);
+void delItem(TableItem item);
 bool isStructDef(TableItem item);
 
 HashTable newHashTable();
-void deleteHashTable(HashTable hashTable);
-TableItem getHashHead(HashTable h, int index);
-void setHashHead(HashTable h, int index, TableItem item);
+void delHashTable();
+TableItem getHashHead(int index);
+void setHashHead(int index, TableItem item);
 
 Scope newScope();
-void deleteScope(Scope scope);
-void innerLayer(Scope scope);
-void outerLayer(Scope scope);
-TableItem getScopeHead(Scope scope);
-void setScopeHead(Scope scope, TableItem item);
-void clearScope();
+void delScope();
+void innerLayer();
+void outerLayer();
+void exitLayer();
+TableItem getLayerHead();
+void setLayerHead(TableItem item);
 
 Table initTable();
-void deleteTable();
+void delTable();
 TableItem searchTableItem(char* name);
 bool hasConfliction(TableItem item);
 void addTableItem(TableItem item);
-void deleteHashItem(TableItem item);
+void delTableItem(TableItem item);
 
 void tranverseTree(Node* node);
 void ExtDef(Node* node);

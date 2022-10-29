@@ -17,8 +17,8 @@ findTableItem.
 searchTableItem.
 getHashHead.
 addTableItem.
-getScopeHead.
-setScopeHead.
+getLayerHead.
+setLayerHead.
 getHashHead.
 setHashHead.
 genCompSt.
@@ -38,11 +38,11 @@ findTableItem.
 searchTableItem.
 getHashHead.
 addTableItem.
-getScopeHead.
-setScopeHead.
+getLayerHead.
+setLayerHead.
 getHashHead.
 setHashHead.
-deleteType.
+delType.
 genStmtList.
 genStmt.
 genExp.
@@ -56,25 +56,25 @@ copyType.
 genExp.
 newType.
 Error type 12 at Line 4: "1.5" is not an integer.
-deleteType.
-deleteType.
-deleteType.
+delType.
+delType.
+delType.
 genExp.
 newType.
 compareType.
 Error type 5 at Line 4: Type mismatched for assignment.
-deleteType.
-clearScope.
-getScopeHead.
-deleteHashItem.
+delType.
+exitLayer.
+getLayerHead.
+delItem.
 getHashHead.
 setHashHead.
-deleteItem.
-deleteFieldList.
-deleteType.
-deleteType.
+delItem.
+delFieldList.
+delType.
+delType.
 reduceDepth.
-deleteType.
+delType.
 start tranverse Specifier.
 start tranverse TYPE.
 start tranverse FunDec.
@@ -111,10 +111,10 @@ start tranverse Exp.
 start tranverse INT.
 start tranverse SEMI.
 start tranverse RC.
-deleteTable.
-deleteHashTable.
-deleteItem.
-deleteFieldList.
-deleteType.
-deleteType.
-deleteScope.
+delTable.
+delHashTable.
+delItem.
+delFieldList.
+delType.
+delType.
+delScope.
