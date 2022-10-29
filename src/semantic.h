@@ -5,6 +5,7 @@
 #include "semErr.h"
 
 #define HASH_TABLE_SIZE 0x3fff
+#define MAX_SCOPE_DEPTH 20
 #define MAX_MSG_LENGTH 100
 
 typedef struct Type_* Type;
@@ -38,7 +39,7 @@ struct Type_
 
 struct TableItem_
 {
-    int depth;
+    int layerDepth;
     FieldList fieldList;
     TableItem sameScope;
     TableItem sameHash;
@@ -51,8 +52,8 @@ struct HashTable_
 
 struct Scope_
 {
-    TableItem* scopeList;
-    int depth;
+    TableItem* scopeLayer;
+    int layerDepth;
 };
 
 struct Table_
@@ -68,14 +69,14 @@ void printFieldList(FieldList fieldList);
 Type newType(int kind, ...);
 Type copyType(Type type);
 void deleteType(Type type);
-bool checkType(Type t1, Type t2);
+bool compareType(Type t1, Type t2);
 
 FieldList newFieldList(char* name, Type type);
 FieldList copyFieldList(FieldList fieldList);
 void deleteFieldList(FieldList fieldList);
 void setFieldListName(FieldList fieldList, char* name);
 
-TableItem newItem(int depth, FieldList fieldList);
+TableItem newItem(int layerDepth, FieldList fieldList);
 void deleteItem(TableItem item);
 bool isStructDef(TableItem item);
 
@@ -86,18 +87,18 @@ void setHashHead(HashTable h, int index, TableItem item);
 
 Scope newScope();
 void deleteScope(Scope scope);
-void incrDepth(Scope scope);
-void decrDepth(Scope scope);
+void innerLayer(Scope scope);
+void outerLayer(Scope scope);
 TableItem getScopeHead(Scope scope);
 void setScopeHead(Scope scope, TableItem item);
+void clearScope();
 
 Table initTable();
-void deleteTable(Table table);
-TableItem searchTableItem(Table table, char* name);
-bool findConflict(Table table, TableItem item);
-void addTableItem(Table table, TableItem item);
-void deleteTableItem(Table table, TableItem item);
-void clearScope(Table table);
+void deleteTable();
+TableItem searchTableItem(char* name);
+bool hasConfliction(TableItem item);
+void addTableItem(TableItem item);
+void deleteHashItem(TableItem item);
 
 void tranverseTree(Node* node);
 void ExtDef(Node* node);

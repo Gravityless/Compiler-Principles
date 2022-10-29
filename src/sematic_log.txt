@@ -22,7 +22,7 @@ setScopeHead.
 getHashHead.
 setHashHead.
 genCompSt.
-incrDepth.
+innerLayer.
 genDefList.
 genDef.
 genSpecifier TYPE: int.
@@ -61,12 +61,12 @@ deleteType.
 deleteType.
 genExp.
 newType.
-checkType.
+compareType.
 Error type 5 at Line 4: Type mismatched for assignment.
 deleteType.
 clearScope.
 getScopeHead.
-deleteTableItem.
+deleteHashItem.
 getHashHead.
 setHashHead.
 deleteItem.

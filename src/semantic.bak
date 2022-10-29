@@ -281,10 +281,10 @@ void deleteScope(Scope scope)
     free(scope);
 }
 
-void incrDepth(Scope scope)
+void innerLayer(Scope scope)
 {
 #if DEBUG
-    printf("incrDepth.\n");
+    printf("innerLayer.\n");
 #endif
     scope->depth++;
 }
@@ -628,7 +628,7 @@ void genVarList(Node *node, TableItem func)
 #if DEBUG
     printf("genVarList.\n");
 #endif
-    incrDepth(table->scope);
+    innerLayer(table->scope);
     int argc = 0;
     Node *pNode = node->child;
     FieldList fieldList = NULL;
@@ -683,7 +683,7 @@ void genCompSt(Node *node, Type returnType)
 #if DEBUG
     printf("genCompSt.\n");
 #endif
-    incrDepth(table->scope);
+    innerLayer(table->scope);
     Node *pNode = node->child->sibling;
     if (!strcmp(pNode->type, "DefList"))
     {
