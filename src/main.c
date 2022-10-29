@@ -27,6 +27,7 @@ int main(int argc, char** argv) {
         fclose(f);
 
         if (errornum == 0) {
+            generateTree(root);
             semanticAnalysis(root);
         }
     }

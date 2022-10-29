@@ -52,3 +52,33 @@ void printTree(Node* node, int space) {
 
     return;  
 }
+
+void printTreetoFile(Node* node, int space, FILE *fp) {
+    if (node == NULL) return;
+
+    for (int i = 0; i < space; i++) fprintf(fp, "  ");
+
+    if (!node->token) 
+        fprintf(fp, "%s (%d)\n", node->type, node->lineno);
+    else if (strcmp("INT", node->type) == 0)
+        fprintf(fp, "%s: %d\n", node->type, atoi(node->val));
+    else if (strcmp("FLOAT", node->type) == 0)
+        fprintf(fp, "%s: %f\n", node->type, atof(node->val));
+    else if(strcmp("ID", node->type) == 0 \
+        || strcmp("TYPE", node->type) == 0)
+        fprintf(fp, "%s: %s\n", node->type, node->val);
+    else
+        fprintf(fp, "%s\n", node->type);
+
+    printTreetoFile(node->child, space + 1, fp);
+    printTreetoFile(node->sibling, space, fp);
+
+    return;  
+}
+
+void generateTree(Node* node) {
+    printf("generate tree.\n");
+    FILE *fp = fopen("./test.txt", "w+");
+    printTreetoFile(node, 0, fp);
+    fclose(fp);
+}

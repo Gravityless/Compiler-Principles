@@ -22,4 +22,8 @@ Node* newNode(char* type, char* val, int lineno, bool is_token, int argc, ...);
 
 void printTree(Node* node, int space);
 
+void printTreetoFile(Node* node, int space, FILE *fp);
+
+void generateTree(Node* node);
+
 #endif

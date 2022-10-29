@@ -4,6 +4,7 @@ Table table = NULL;
 
 Type newType(int kind, ...)
 {
+    printf("newType.\n");
     Type t = (Type)malloc(sizeof(struct Type_));
     t->kind = kind;
     va_list ap;
@@ -33,6 +34,7 @@ Type newType(int kind, ...)
 
 Type copyType(Type type)
 {
+    printf("copyType.\n");
     if (type == NULL)
         return NULL;
     Type t = (Type)malloc(sizeof(struct Type_));
@@ -60,6 +62,7 @@ Type copyType(Type type)
 
 void deleteType(Type type)
 {
+    printf("deleteType.\n");
     FieldList t = NULL;
     switch (type->kind)
     {
@@ -95,6 +98,7 @@ void deleteType(Type type)
 
 bool checkType(Type t1, Type t2)
 {
+    printf("checkType.\n");
     if (t1->kind != t2->kind)
         return false;
 
@@ -115,6 +119,7 @@ bool checkType(Type t1, Type t2)
 
 void printType(Type type)
 {
+    printf("printType.\n");
     if (type == NULL)
     {
         printf("type is NULL.\n");
@@ -152,6 +157,7 @@ void printType(Type type)
 
 FieldList newFieldList(char *name, Type type)
 {
+    printf("newFieldList.\n");
     FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
     p->name = newString(name);
     p->type = type;
@@ -161,6 +167,7 @@ FieldList newFieldList(char *name, Type type)
 
 FieldList copyFieldList(FieldList fieldList)
 {
+    printf("copyFieldList.\n");
     FieldList p = NULL, q = NULL;
     FieldList t = fieldList;
     p = newFieldList(t->name, copyType(t->type));
@@ -178,6 +185,7 @@ FieldList copyFieldList(FieldList fieldList)
 
 void deleteFieldList(FieldList fieldList)
 {
+    printf("deleteFieldList.\n");
     if (fieldList->name)
         free(fieldList->name);
     if (fieldList->type)
@@ -187,6 +195,7 @@ void deleteFieldList(FieldList fieldList)
 
 void setFieldListName(FieldList fieldList, char *name)
 {
+    printf("setFieldListName.\n");
     if (fieldList->name != NULL)
         free(fieldList->name);
     fieldList->name = newString(name);
@@ -194,6 +203,7 @@ void setFieldListName(FieldList fieldList, char *name)
 
 void printFieldList(FieldList fieldList)
 {
+    printf("printFieldList.\n");
     if (fieldList == NULL)
         printf("FieldList is NULL\n");
     else
@@ -207,6 +217,7 @@ void printFieldList(FieldList fieldList)
 
 TableItem newItem(int depth, FieldList fieldList)
 {
+    printf("newItem.\n");
     TableItem t = (TableItem)malloc(sizeof(struct TableItem_));
     t->depth = depth;
     t->fieldList = fieldList;
@@ -217,6 +228,7 @@ TableItem newItem(int depth, FieldList fieldList)
 
 void deleteItem(TableItem item)
 {
+    printf("deleteItem.\n");
     if (item->fieldList != NULL)
         deleteFieldList(item->fieldList);
     free(item);
@@ -224,6 +236,7 @@ void deleteItem(TableItem item)
 
 HashTable newHashTable()
 {
+    printf("newHashTable.\n");
     HashTable t = (HashTable)malloc(sizeof(struct HashTable_));
     t->hashArray = (TableItem *)malloc(sizeof(struct TableItem_) * HASH_TABLE_SIZE);
 
@@ -236,6 +249,7 @@ HashTable newHashTable()
 
 void deleteHashTable(HashTable hashTable)
 {
+    printf("deleteHashTable.\n");
     for (int i = 0; i < HASH_TABLE_SIZE; i++)
     {
         TableItem t = hashTable->hashArray[i];
@@ -252,15 +266,18 @@ void deleteHashTable(HashTable hashTable)
 
 TableItem getHashHead(HashTable h, int index)
 {
+    printf("getHashHead.\n");
     return h->hashArray[index];
 }
 void setHashHead(HashTable h, int index, TableItem item)
 {
+    printf("setHashHead.\n");
     h->hashArray[index] = item;
 }
 
 Stack newStack()
 {
+    printf("newStack.\n");
     Stack t = (Stack)malloc(sizeof(struct Stack_));
     t->stackArray = (TableItem *)malloc(sizeof(TableItem) * HASH_TABLE_SIZE);
     for (int i = 0; i < HASH_TABLE_SIZE; i++)
@@ -273,32 +290,39 @@ Stack newStack()
 
 void deleteStack(Stack stack)
 {
+    printf("deleteStack.\n");
     free(stack->stackArray);
     free(stack);
 }
 
 void increDepth(Stack stack)
 {
+    printf("increDepth.\n");
     stack->depth++;
 }
 
 void reduceDepth(Stack stack)
 {
+    printf("reduceDepth.\n");
     stack->depth--;
 }
 
 TableItem getStackHead(Stack stack)
 {
+    printf("getStackHead.\n");
     return stack->stackArray[stack->depth];
 }
 
 void setStackHead(Stack stack, TableItem item)
 {
+    printf("setStackHead.\n");
     stack->stackArray[stack->depth] = item;
 }
 
 Table initTable()
 {
+    printf("initTable.\n");
+    printf("initiate table.\n");
     Table t = (Table)malloc(sizeof(struct Table_));
     t->hashTable = newHashTable();
     t->stack = newStack();
@@ -308,6 +332,7 @@ Table initTable()
 
 void deleteTable(Table table)
 {
+    printf("deleteTable.\n");
     deleteHashTable(table->hashTable);
     deleteStack(table->stack);
     free(table);
@@ -315,6 +340,7 @@ void deleteTable(Table table)
 
 TableItem searchTableItem(Table table, char *name)
 {
+    printf("searchTableItem.\n");
     TableItem t = getHashHead(table->hashTable, getHashCode(name));
     if (t == NULL)
         return NULL;
@@ -329,6 +355,7 @@ TableItem searchTableItem(Table table, char *name)
 
 bool checkTableItem(Table table, TableItem item)
 {
+    printf("checkTableItem.\n");
     TableItem t = searchTableItem(table, item->fieldList->name);
     if (t == NULL)
         return false;
@@ -349,6 +376,7 @@ bool checkTableItem(Table table, TableItem item)
 
 void addTableItem(Table table, TableItem item)
 {
+    printf("addTableItem.\n");
     int hashCode = getHashCode(item->fieldList->name);
     HashTable h = table->hashTable;
     Stack s = table->stack;
@@ -360,6 +388,7 @@ void addTableItem(Table table, TableItem item)
 
 void deleteTableItem(Table table, TableItem item)
 {
+    printf("deleteTableItem.\n");
     int hashCode = getHashCode(item->fieldList->name);
     HashTable h = table->hashTable;
     Stack s = table->stack;
@@ -381,6 +410,7 @@ void deleteTableItem(Table table, TableItem item)
 
 bool structDef(TableItem item)
 {
+    printf("structDef.\n");
     if (item == NULL || item->fieldList->type->kind != STRUCTURE)
         return false;
     return true;
@@ -388,6 +418,7 @@ bool structDef(TableItem item)
 
 void clearCurDepthStackList(Table table)
 {
+    printf("clearCurDepthStackList.\n");
     Stack s = table->stack;
     TableItem t = getStackHead(s);
     while (t)
@@ -425,6 +456,7 @@ void printTable(Table table)
 
 void genExtDef(Node *node)
 {
+    printf("genExtDef.\n");
     Type specifierType = genSpecifier(node->child);
     char *nextType = node->child->sibling->type;
 
@@ -445,6 +477,7 @@ void genExtDef(Node *node)
 // TODO: line 398 if?
 void genExtDecList(Node *node, Type specifier)
 {
+    printf("genExtDecList.\n");
     Node *pNode = node;
     while (pNode)
     {
@@ -469,6 +502,7 @@ void genExtDecList(Node *node, Type specifier)
 
 Type genSpecifier(Node *node)
 {
+    printf("genSpecifier.\n");
     Node *pNode = node->child;
     if (!strcmp(pNode->type, "TYPE"))
     {
@@ -486,6 +520,7 @@ Type genSpecifier(Node *node)
 // TODO: line 435 where is LB?
 Type genStructSpecifier(Node *node)
 {
+    printf("genStructSpecifier.\n");
     Type result = NULL;
     Node *pNode = node->child->sibling;
 
@@ -546,6 +581,7 @@ Type genStructSpecifier(Node *node)
 
 TableItem genVarDec(Node *node, Type specifier)
 {
+    printf("genVarDec.\n");
     Node *id = node;
     while (id->child != NULL)
         id = id->child;
@@ -568,6 +604,7 @@ TableItem genVarDec(Node *node, Type specifier)
 
 void genFunDec(Node *node, Type returnType)
 {
+    printf("genFunDec.\n");
     TableItem item = newItem(table->stack->depth, newFieldList(node->child->val,
                                                                newType(FUNCTION, 0, NULL, copyType(returnType))));
     if (!strcmp(node->child->sibling->sibling->type, "VarList"))
@@ -587,6 +624,7 @@ void genFunDec(Node *node, Type returnType)
 
 void genVarList(Node *node, TableItem func)
 {
+    printf("genVarList.\n");
     increDepth(table->stack);
     int argc = 0;
     Node *pNode = node->child;
@@ -615,6 +653,7 @@ void genVarList(Node *node, TableItem func)
 
 FieldList genParamDec(Node *node)
 {
+    printf("genParamDec.\n");
     Type specifierType = genSpecifier(node->child);
     TableItem item = genVarDec(node->child->sibling, specifierType);
     if (specifierType)
@@ -636,6 +675,7 @@ FieldList genParamDec(Node *node)
 
 void genCompSt(Node *node, Type returnType)
 {
+    printf("genCompSt.\n");
     increDepth(table->stack);
     Node *pNode = node->child->sibling;
     if (!strcmp(pNode->type, "DefList"))
@@ -653,6 +693,7 @@ void genCompSt(Node *node, Type returnType)
 
 void genStmtList(Node *node, Type returnType)
 {
+    printf("genStmtList.\n");
     while (node)
     {
         genStmt(node->child, returnType);
@@ -662,6 +703,7 @@ void genStmtList(Node *node, Type returnType)
 
 void genStmt(Node *node, Type returnType)
 {
+    printf("genStmt.\n");
     Type expType = NULL;
 
     if (!strcmp(node->child->type, "Exp"))
@@ -694,6 +736,7 @@ void genStmt(Node *node, Type returnType)
 
 void genDefList(Node *node, TableItem structInfo)
 {
+    printf("genDefList.\n");
     while (node)
     {
         genDef(node->child, structInfo);
@@ -703,6 +746,7 @@ void genDefList(Node *node, TableItem structInfo)
 
 void genDef(Node *node, TableItem structInfo)
 {
+    printf("genDef.\n");
     Type dectype = genSpecifier(node->child);
     genDecList(node->child->sibling, dectype, structInfo);
     if (dectype)
@@ -711,6 +755,7 @@ void genDef(Node *node, TableItem structInfo)
 
 void genDecList(Node *node, Type specifier, TableItem structInfo)
 {
+    printf("genDecList.\n");
     Node *pNode = node;
     while (pNode)
     {
@@ -724,6 +769,7 @@ void genDecList(Node *node, Type specifier, TableItem structInfo)
 
 void genDec(Node *node, Type specifier, TableItem structInfo)
 {
+    printf("genDec.\n");
     if (node->child->sibling == NULL)
     {
         if (structInfo != NULL)
@@ -820,24 +866,24 @@ void genDec(Node *node, Type specifier, TableItem structInfo)
 
 Type genExp(Node *node)
 {
-    if (!strcmp(node->type, "Exp"))
+    printf("genExp.\n");
+    Node *t = node->child;
+    if (!strcmp(t->type, "Exp"))
     {
-        if (strcmp(node->sibling->type, "LB") && strcmp(node->sibling->type, "DOT"))
+        if (strcmp(t->sibling->type, "LB") && strcmp(t->sibling->type, "DOT"))
         {
-            Type p1 = genExp(node);
-            Type p2 = genExp(node->sibling->sibling);
+            Type p1 = genExp(t);
+            Type p2 = genExp(t->sibling->sibling);
             Type returnType = NULL;
 
-            if (!strcmp(node->sibling->type, "ASSIGNOP"))
+            if (!strcmp(t->sibling->type, "ASSIGNOP"))
             {
-
-                Node *tchild = node->child;
+                Node *tchild = t->child;
 
                 if (!strcmp(tchild->type, "FLOAT") ||
                     !strcmp(tchild->type, "INT"))
                 {
-
-                    Error(ASSIGN_RVAL, node->lineno,
+                    Error(ASSIGN_RVAL, t->lineno,
                           "The left-hand side of an assignment must be "
                           "avariable.");
                 }
@@ -847,8 +893,7 @@ Type genExp(Node *node)
                 {
                     if (!checkType(p1, p2))
                     {
-
-                        Error(ASSIGN_TYPE, node->lineno,
+                        Error(ASSIGN_TYPE, t->lineno,
                               "Type mismatched for assignment.");
                     }
                     else
@@ -856,8 +901,7 @@ Type genExp(Node *node)
                 }
                 else
                 {
-
-                    Error(ASSIGN_RVAL, node->lineno,
+                    Error(ASSIGN_RVAL, t->lineno,
                           "The left-hand side of an assignment must be "
                           "avariable.");
                 }
@@ -866,12 +910,12 @@ Type genExp(Node *node)
             {
                 if (p1 && p2 && (p1->kind == ARRAY || p2->kind == ARRAY))
                 {
-                    Error(OP_TYPE, node->lineno,
+                    Error(OP_TYPE, t->lineno,
                           "Type mismatched for operands.");
                 }
                 else if (!checkType(p1, p2))
                 {
-                    Error(OP_TYPE, node->lineno,
+                    Error(OP_TYPE, t->lineno,
                           "Type mismatched for operands.");
                 }
                 else
@@ -891,10 +935,10 @@ Type genExp(Node *node)
         }
         else
         {
-            if (!strcmp(node->sibling->type, "LB"))
+            if (!strcmp(t->sibling->type, "LB"))
             {
-                Type p1 = genExp(node);
-                Type p2 = genExp(node->sibling->sibling);
+                Type p1 = genExp(t);
+                Type p2 = genExp(t->sibling->sibling);
                 Type returnType = NULL;
 
                 if (!p1)
@@ -903,16 +947,16 @@ Type genExp(Node *node)
                 else if (p1 && p1->kind != ARRAY)
                 {
                     char msg[MAX_MSG_LENGTH] = {0};
-                    sprintf(msg, "\"%s\" is not an array.", node->child->val);
-                    Error(NOT_ARRAY, node->lineno, msg);
+                    sprintf(msg, "\"%s\" is not an array.", t->child->val);
+                    Error(NOT_ARRAY, t->lineno, msg);
                 }
                 else if (!p2 || p2->kind != BASIC ||
                          p2->u.basic != 0)
                 {
                     char msg[MAX_MSG_LENGTH] = {0};
                     sprintf(msg, "\"%s\" is not an integer.",
-                            node->sibling->sibling->child->val);
-                    Error(NOT_INT, node->lineno, msg);
+                            t->sibling->sibling->child->val);
+                    Error(NOT_INT, t->lineno, msg);
                 }
                 else
                 {
@@ -926,18 +970,18 @@ Type genExp(Node *node)
             }
             else
             {
-                Type p1 = genExp(node);
+                Type p1 = genExp(t);
                 Type returnType = NULL;
                 if (!p1 || p1->kind != STRUCTURE ||
                     !p1->u.structure->name)
                 {
-                    Error(NOT_STRUCT, node->lineno, "Illegal use of \".\".");
+                    Error(NOT_STRUCT, t->lineno, "Illegal use of \".\".");
                     if (p1)
                         deleteType(p1);
                 }
                 else
                 {
-                    Node *ref_id = node->sibling->sibling;
+                    Node *ref_id = t->sibling->sibling;
                     FieldList structfield = p1->u.structure->tail;
                     while (structfield != NULL)
                     {
@@ -949,9 +993,8 @@ Type genExp(Node *node)
                     }
                     if (structfield == NULL)
                     {
-                        printf("Error type %d at Line %d: %s.\n", 14, node->lineno,
+                        printf("Error type %d at Line %d: %s.\n", 14, t->lineno,
                                "NONEXISTFIELD");
-                        ;
                     }
                     else
                     {
@@ -964,14 +1007,14 @@ Type genExp(Node *node)
             }
         }
     }
-    else if (!strcmp(node->type, "MINUS") || !strcmp(node->type, "NOT"))
+    else if (!strcmp(t->type, "MINUS") || !strcmp(t->type, "NOT"))
     {
-        Type p1 = genExp(node->sibling);
+        Type p1 = genExp(t->sibling);
         Type returnType = NULL;
         if (!p1 || p1->kind != BASIC)
         {
-            printf("Error type %d at Line %d: %s.\n", 7, node->lineno,
-                   "OP_TYPE");
+            printf("Error type %d at Line %d: %s.\n", 7, t->lineno,
+                   "TYPE_MISMATCH_OP");
         }
         else
         {
@@ -981,33 +1024,33 @@ Type genExp(Node *node)
             deleteType(p1);
         return returnType;
     }
-    else if (!strcmp(node->type, "LP"))
+    else if (!strcmp(t->type, "LP"))
     {
-        return genExp(node->sibling);
+        return genExp(t->sibling);
     }
-    else if (!strcmp(node->type, "ID") && node->sibling)
+    else if (!strcmp(t->type, "ID") && t->sibling)
     {
-        TableItem funcInfo = searchTableItem(table, node->val);
-
+        TableItem funcInfo = searchTableItem(table, t->val);
         if (funcInfo == NULL)
         {
             char msg[MAX_MSG_LENGTH] = {0};
-            sprintf(msg, "Undefined function \"%s\".", node->val);
+            sprintf(msg, "Undefined function \"%s\".", t->val);
             Error(FUN_UNDEF, node->lineno, msg);
             return NULL;
         }
         else if (funcInfo->fieldList->type->kind != FUNCTION)
         {
             char msg[MAX_MSG_LENGTH] = {0};
-            sprintf(msg, "\"%s\" is not a function.", node->val);
-            Error(NOT_FUN, node->lineno, msg);
+            sprintf(msg, "\"%s\" is not a function.", t->val);
+            Error(FUN_UNDEF, node->lineno, msg);
             return NULL;
         }
-        else if (!strcmp(node->sibling->sibling->type, "Args"))
+        else if (!strcmp(t->sibling->sibling->type, "Args"))
         {
-            genArgs(node->sibling->sibling, funcInfo);
+            genArgs(t->sibling->sibling, funcInfo);
             return copyType(funcInfo->fieldList->type->u.function->returnType);
         }
+
         else
         {
             if (funcInfo->fieldList->type->u.function->argc != 0)
@@ -1022,14 +1065,14 @@ Type genExp(Node *node)
             return copyType(funcInfo->fieldList->type->u.function->returnType);
         }
     }
-    else if (!strcmp(node->type, "ID"))
+    else if (!strcmp(t->type, "ID"))
     {
-        TableItem tp = searchTableItem(table, node->val);
+        TableItem tp = searchTableItem(table, t->val);
         if (tp == NULL || structDef(tp))
         {
             char msg[MAX_MSG_LENGTH] = {0};
-            sprintf(msg, "Undefined variable \"%s\".", node->val);
-            Error(VAR_UNDEF, node->lineno, msg);
+            sprintf(msg, "Undefined variable \"%s\".", t->val);
+            Error(VAR_UNDEF, t->lineno, msg);
             return NULL;
         }
         else
@@ -1039,7 +1082,7 @@ Type genExp(Node *node)
     }
     else
     {
-        if (!strcmp(node->type, "INT"))
+        if (!strcmp(t->type, "INT"))
         {
             return newType(BASIC, 0);
         }
@@ -1052,9 +1095,10 @@ Type genExp(Node *node)
 
 void genArgs(Node *node, TableItem funcInfo)
 {
-    Node *temp = node;
+    printf("genArgs.\n");
+    Node *pNode = node;
     FieldList arg = funcInfo->fieldList->type->u.function->argv;
-    while (temp)
+    while (pNode)
     {
         if (arg == NULL)
         {
@@ -1065,7 +1109,7 @@ void genArgs(Node *node, TableItem funcInfo)
             Error(ARG_INCOMPATIBLE, node->lineno, msg);
             break;
         }
-        Type realType = genExp(temp->child);
+        Type realType = genExp(pNode->child);
         if (!checkType(realType, arg->type))
         {
             char msg[MAX_MSG_LENGTH] = {0};
@@ -1080,9 +1124,9 @@ void genArgs(Node *node, TableItem funcInfo)
             deleteType(realType);
 
         arg = arg->tail;
-        if (temp->child->sibling)
+        if (pNode->child->sibling)
         {
-            temp = temp->child->sibling->sibling;
+            pNode = pNode->child->sibling->sibling;
         }
         else
         {
@@ -1111,7 +1155,10 @@ void tranverseTree(Node *node)
 
 void semanticAnalysis(Node *node)
 {
+    printf("initiate tranverse.\n");
     table = initTable();
+    printf("start tranverse.\n");
     tranverseTree(node);
+    printf("delete table.\n");
     deleteTable(table);
 }
