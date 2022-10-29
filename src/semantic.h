@@ -145,7 +145,6 @@ static inline char* newString(char* s) {
     if (s == NULL) return NULL;
     int length = strlen(s) + 1;
     char* t = (char*)malloc(sizeof(char) * length);
-    assert(t != NULL);
     strncpy(t, s, length);
     return t;
 }

@@ -19,12 +19,10 @@ Type newType(int kind, ...)
         t->u.array.size = va_arg(ap, int);
         break;
     case STRUCTURE:
-        t->u.structure = (FieldList)malloc(sizeof(struct FieldList_));
         t->u.structure->name = va_arg(ap, char *);
         t->u.structure->tail = va_arg(ap, FieldList);
         break;
     case FUNCTION:
-        t->u.function = (Function)malloc(sizeof(struct Function_));
         t->u.function->argc = va_arg(ap, int);
         t->u.function->argv = va_arg(ap, FieldList);
         t->u.function->returnType = va_arg(ap, Type);
@@ -51,12 +49,10 @@ Type copyType(Type type)
         t->u.array.size = type->u.array.size;
         break;
     case STRUCTURE:
-        t->u.structure = (FieldList)malloc(sizeof(struct FieldList_));
         t->u.structure->name = newString(type->u.structure->name);
         t->u.structure->tail = copyFieldList(type->u.structure->tail);
         break;
     case FUNCTION:
-        t->u.function = (Function)malloc(sizeof(struct Function_));
         t->u.function->argc = type->u.function->argc;
         t->u.function->argv = copyFieldList(type->u.function->argv);
         t->u.function->returnType = copyType(type->u.function->returnType);
@@ -86,7 +82,6 @@ void deleteType(Type type)
             t = t->tail;
             deleteFieldList(fieldList);
         }
-        free(type->u.structure);
         break;
     case FUNCTION:
         deleteType(type->u.function->returnType);
@@ -97,7 +92,6 @@ void deleteType(Type type)
             t = t->tail;
             deleteFieldList(fieldList);
         }
-        free(type->u.function);
         break;
     }
     free(type);
@@ -165,7 +159,10 @@ void printType(Type type)
 FieldList newFieldList(char *name, Type type)
 {
     printf("newFieldList name: %s.\n", name);
-    FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
+    FieldList p = NULL;
+    printf("p = NULL.\n");
+    p = (FieldList)malloc(sizeof(int) * 3);
+    printf("malloc success.\n");
     p->name = newString(name);
     p->type = type;
     p->tail = NULL;
@@ -245,7 +242,7 @@ HashTable newHashTable()
 {
     printf("newHashTable.\n");
     HashTable t = (HashTable)malloc(sizeof(struct HashTable_));
-    t->hashArray = (TableItem *)malloc(sizeof(TableItem) * HASH_TABLE_SIZE);
+    t->hashArray = (TableItem *)malloc(sizeof(struct TableItem_) * HASH_TABLE_SIZE);
 
     for (int i = 0; i < HASH_TABLE_SIZE; i++)
     {
