@@ -470,7 +470,7 @@ void FunDec(Node* node, Type returnType) {
     }
 }
 
-void VarList(Node* node, TableItem func) {
+void VarList(Node* node, TableItem fun) {
     innerLayer();
 
     int argc = 0;
@@ -478,8 +478,8 @@ void VarList(Node* node, TableItem func) {
     FieldList cur = NULL;
 
     FieldList paramDec = ParamDec(tmp);
-    func->fieldList->type->u.function.argv = copyFieldList(paramDec);
-    cur = func->fieldList->type->u.function.argv;
+    fun->fieldList->type->u.function.argv = copyFieldList(paramDec);
+    cur = fun->fieldList->type->u.function.argv;
     argc++;
 
     while (tmp->sibling) {
@@ -491,7 +491,7 @@ void VarList(Node* node, TableItem func) {
             argc++;
         }
     }
-    func->fieldList->type->u.function.argc = argc;
+    fun->fieldList->type->u.function.argc = argc;
 
     outerLayer();
 }
