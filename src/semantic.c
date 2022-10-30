@@ -94,7 +94,8 @@ void delType(Type type) {
 }
 
 bool compareType(Type t1, Type t2) {
-    if (t1 == NULL || t2 == NULL) return true;
+    if (t1 == NULL && t2 == NULL) return true;
+    if ((t1 != NULL && t2 == NULL) || (t1 == NULL && t2 != NULL)) return false;
     if (t1->kind == FUNCTION || t2->kind == FUNCTION) return false;
     if (t1->kind != t2->kind)
         return false;
