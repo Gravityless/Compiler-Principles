@@ -65,9 +65,6 @@ struct Table_
     int anonymousNum;
 };
 
-void printType(Type type);
-void printFieldList(FieldList fieldList);
-
 Type newType(int kind, ...);
 Type copyType(Type type);
 void delType(Type type);

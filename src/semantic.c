@@ -60,8 +60,7 @@ Type copyType(Type src) {
 }
 
 void delType(Type type) {
-    FieldList temp = NULL;
-    // printType(type);
+    FieldList tmp = NULL;
     switch (type->kind) {
         case BASIC:
             break;
@@ -72,19 +71,19 @@ void delType(Type type) {
             // printf("debuger: free type-struct-name\n");
             if (type->u.structure.name)
                 free(type->u.structure.name);
-            temp = type->u.structure.fieldList;
-            while (temp) {
-                FieldList del = temp;
-                temp = temp->tail;
+            tmp = type->u.structure.fieldList;
+            while (tmp) {
+                FieldList del = tmp;
+                tmp = tmp->tail;
                 delFieldList(del);
             }
             break;
         case FUNCTION:
             delType(type->u.function.rType);
-            temp = type->u.function.argv;
-            while (temp) {
-                FieldList del = temp;
-                temp = temp->tail;
+            tmp = type->u.function.argv;
+            while (tmp) {
+                FieldList del = tmp;
+                tmp = tmp->tail;
                 delFieldList(del);
             }
             break;
@@ -111,38 +110,6 @@ bool compareType(Type t1, Type t2) {
     }
 }
 
-void printType(Type type) {
-    if (type == NULL) {
-        printf("type is NULL.\n");
-    } else {
-        printf("type kind: %d\n", type->kind);
-        switch (type->kind) {
-            case BASIC:
-                printf("type basic: %d\n", type->u.basic);
-                break;
-            case ARRAY:
-                printf("array size: %d\n", type->u.array.size);
-                printType(type->u.array.elem);
-                break;
-            case STRUCTURE:
-                if (!type->u.structure.name)
-                    printf("struct name is NULL\n");
-                else {
-                    printf("struct name is %s\n", type->u.structure.name);
-                }
-                printFieldList(type->u.structure.fieldList);
-                break;
-            case FUNCTION:
-                printf("function argc is %d\n", type->u.function.argc);
-                printf("function args:\n");
-                printFieldList(type->u.function.argv);
-                printf("function return type:\n");
-                printType(type->u.function.rType);
-                break;
-        }
-    }
-}
-
 // FieldList functions
 FieldList newFieldList(char* newName, Type newType) {
     FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
@@ -154,17 +121,17 @@ FieldList newFieldList(char* newName, Type newType) {
 
 FieldList copyFieldList(FieldList src) {
     FieldList head = NULL, cur = NULL;
-    FieldList temp = src;
+    FieldList tmp = src;
 
-    while (temp) {
+    while (tmp) {
         if (!head) {
-            head = newFieldList(temp->name, copyType(temp->type));
+            head = newFieldList(tmp->name, copyType(tmp->type));
             cur = head;
-            temp = temp->tail;
+            tmp = tmp->tail;
         } else {
-            cur->tail = newFieldList(temp->name, copyType(temp->type));
+            cur->tail = newFieldList(tmp->name, copyType(tmp->type));
             cur = cur->tail;
-            temp = temp->tail;
+            tmp = tmp->tail;
         }
     }
     return head;
@@ -188,17 +155,6 @@ void setFieldListName(FieldList p, char* newName) {
     if (p->name != NULL) 
         free(p->name);
     p->name = newString(newName);
-}
-
-void printFieldList(FieldList fieldList) {
-    if (fieldList == NULL)
-        printf("fieldList is NULL\n");
-    else {
-        printf("fieldList name is: %s\n", fieldList->name);
-        printf("FieldList Type:\n");
-        printType(fieldList->type);
-        printFieldList(fieldList->tail);
-    }
 }
 
 // tableItem functions
@@ -231,10 +187,10 @@ HashTable newHashTable() {
 
 void delHashTable() {
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
-        TableItem temp = hashTable->hashArray[i];
-        while (temp) {
-            TableItem del = temp;
-            temp = temp->sameHash;
+        TableItem tmp = hashTable->hashArray[i];
+        while (tmp) {
+            TableItem del = tmp;
+            tmp = tmp->sameHash;
             delItem(del);
         }
     }
@@ -284,10 +240,10 @@ void outerLayer() {
 }
 
 void exitLayer() {
-    TableItem temp = getLayerHead();
-    while (temp) {
-        TableItem del = temp;
-        temp = temp->sameScope;
+    TableItem tmp = getLayerHead();
+    while (tmp) {
+        TableItem del = tmp;
+        tmp = tmp->sameScope;
         delTableItem(del);
     }
     setLayerHead(NULL);
@@ -321,27 +277,26 @@ void delTable() {
 
 TableItem searchTableItem(char* name) {
     unsigned hashCode = getHashCode(name);
-    TableItem temp = getHashHead(hashCode);
-    if (temp == NULL) return NULL;
-    while (temp) {
-        if (!strcmp(temp->fieldList->name, name)) return temp;
-        temp = temp->sameHash;
+    TableItem tmp = getHashHead(hashCode);
+    if (tmp == NULL) return NULL;
+    while (tmp) {
+        if (!strcmp(tmp->fieldList->name, name)) return tmp;
+        tmp = tmp->sameHash;
     }
     return NULL;
 }
 
-// Return false -> no confliction, true -> has confliction
 bool hasConfliction(TableItem item) {
-    TableItem temp = searchTableItem(item->fieldList->name);
-    if (temp == NULL) return false;
-    while (temp) {
-        if (!strcmp(temp->fieldList->name, item->fieldList->name)) {
-            if (temp->fieldList->type->kind == STRUCTURE ||
+    TableItem tmp = searchTableItem(item->fieldList->name);
+    if (tmp == NULL) return false;
+    while (tmp) {
+        if (!strcmp(tmp->fieldList->name, item->fieldList->name)) {
+            if (tmp->fieldList->type->kind == STRUCTURE ||
                 item->fieldList->type->kind == STRUCTURE)
                 return true;
-            if (temp->layerDepth == scope->layerDepth) return true;
+            if (tmp->layerDepth == scope->layerDepth) return true;
         }
-        temp = temp->sameHash;
+        tmp = tmp->sameHash;
     }
     return false;
 }
@@ -372,75 +327,42 @@ void delTableItem(TableItem item) {
     delItem(item);
 }
 
-bool isStructDef(TableItem src) {
-    if (src == NULL || src->fieldList->type->kind != STRUCTURE 
-        || src->fieldList->type->u.structure.name)
+bool isStructDef(TableItem item) {
+    if (item == NULL || item->fieldList->type->kind != STRUCTURE 
+        || item->fieldList->type->u.structure.name)
         return false;
     return true;
 }
 
-// for Debug
-void printTable(Table table) {
-    printf("----------------hash_table----------------\n");
-    for (int i = 0; i < HASH_TABLE_SIZE; i++) {
-        TableItem item = getHashHead(i);
-        if (item) {
-            printf("[%d]", i);
-            while (item) {
-                printf(" -> name: %s layerDepth: %d\n", item->fieldList->name,
-                       item->layerDepth);
-                printf("========FiledList========\n");
-                printFieldList(item->fieldList);
-                printf("===========End===========\n");
-                item = item->sameHash;
-            }
-            printf("\n");
-        }
-    }
-    printf("-------------------end--------------------\n");
-}
-
 // Generate symbol table functions
 void ExtDef(Node* node) {
-    // ExtDef -> Specifier ExtDecList SEMI
-    //         | Specifier SEMI
-    //         | Specifier FunDec CompSt
     Type specifierType = Specifier(node->child);
     char* secondName = node->child->sibling->type;
 
-    // ExtDef -> Specifier ExtDecList SEMI
     if (!strcmp(secondName, "ExtDecList")) {
-        // TODO: process first situation
         ExtDecList(node->child->sibling, specifierType);
     }
-    // ExtDef -> Specifier FunDec CompSt
     else if (!strcmp(secondName, "FunDec")) {
-        // TODO: process third situation
         FunDec(node->child->sibling, specifierType);
         CompSt(node->child->sibling->sibling, specifierType);
     }
     if (specifierType) delType(specifierType);
-    // Specifier SEMI
-    // this situation has no meaning
-    // or is struct define(have been processe inSpecifier())
 }
 
 void ExtDecList(Node* node, Type specifier) {
-    // ExtDecList -> VarDec
-    //             | VarDec COMMA ExtDecList
-    Node* temp = node;
-    while (temp) {
-        TableItem item = VarDec(temp->child, specifier);
+    Node* tmp = node;
+    while (tmp) {
+        TableItem item = VarDec(tmp->child, specifier);
         if (hasConfliction(item)) {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "Redefined variable \"%s\".", item->fieldList->name);
-            Error(VAR_REDEF, temp->lineno, msg);
+            Error(VAR_REDEF, tmp->lineno, msg);
             delItem(item);
         } else {
             addTableItem(item);
         }
-        if (temp->child->sibling) {
-            temp = temp->sibling->sibling->child;
+        if (tmp->child->sibling) {
+            tmp = tmp->sibling->sibling->child;
         } else {
             break;
         }
@@ -448,46 +370,32 @@ void ExtDecList(Node* node, Type specifier) {
 }
 
 Type Specifier(Node* node) {
-    // Specifier -> TYPE
-    //            | StructSpecifier
-
     Node* t = node->child;
-    // Specifier -> TYPE
     if (!strcmp(t->type, "TYPE")) {
-        if (!strcmp(t->val, "float")) {
-            return newType(BASIC, 1);
-        } else {
+        if (!strcmp(t->val, "int")) {
             return newType(BASIC, 0);
+        } else {
+            return newType(BASIC, 1);
         }
-    }
-    // Specifier -> StructSpecifier
-    else {
+    } else {
         return StructSpecifier(t);
     }
 }
 
 Type StructSpecifier(Node* node) {
-    // StructSpecifier -> STRUCT OptTag LC DefList RC
-    //                  | STRUCT Tag
-
-    // OptTag -> ID | e
-    // Tag -> ID
     Type returnType = NULL;
     Node* t = node->child->sibling;
-    // StructSpecifier->STRUCT OptTag LC DefList RC
+
     if (strcmp(t->type, "Tag")) {
         TableItem structItem =
-            newItem(scope->layerDepth,
-                    newFieldList("", newType(STRUCTURE, NULL, NULL)));
+            newItem(scope->layerDepth, newFieldList("", newType(STRUCTURE, NULL, NULL)));
         if (!strcmp(t->type, "OptTag")) {
             setFieldListName(structItem->fieldList, t->child->val);
             t = t->sibling;
-        }
-        // unnamed struct
-        else {
+        } else {
             table->anonymousNum ++;
             char structName[20] = {0};
-            sprintf(structName, "%d", table->anonymousNum );
+            sprintf(structName, "%d", table->anonymousNum);
             setFieldListName(structItem->fieldList, structName);
         }
 
@@ -501,22 +409,16 @@ Type StructSpecifier(Node* node) {
             Error(STRUCT_REDEF, node->lineno, msg);
             delItem(structItem);
         } else {
-            returnType = newType(
-                STRUCTURE, newString(structItem->fieldList->name),
+            returnType = newType(STRUCTURE, newString(structItem->fieldList->name),
                 copyFieldList(structItem->fieldList->type->u.structure.fieldList));
 
             if (!strcmp(node->child->sibling->type, "OptTag")) {
                 addTableItem(structItem);
-            }
-            // OptTag -> e
-            else {
+            } else {
                 delItem(structItem);
             }
         }
-    }
-
-    // StructSpecifier->STRUCT Tag
-    else {
+    } else {
         TableItem structItem = searchTableItem(t->child->val);
         if (structItem == NULL || !isStructDef(structItem)) {
             char msg[MAX_MSG_LENGTH] = {0};
@@ -531,90 +433,69 @@ Type StructSpecifier(Node* node) {
 }
 
 TableItem VarDec(Node* node, Type specifier) {
-    // VarDec -> ID
-    //         | VarDec LB INT RB
     Node* id = node;
-    // get ID
     while (id->child) id = id->child;
     TableItem p = newItem(scope->layerDepth, newFieldList(id->val, NULL));
 
-    // VarDec -> ID
     if (!strcmp(node->child->type, "ID")) {
         p->fieldList->type = copyType(specifier);
-    }
-    // VarDec -> VarDec LB INT RB
-    else {
+    } else {
         Node* varDec = node->child;
-        Type temp = specifier;
+        Type tmp = specifier;
         while (varDec->sibling) {
-            p->fieldList->type =
-                newType(ARRAY, copyType(temp), atoi(varDec->sibling->sibling->val));
-            temp = p->fieldList->type;
+            tmp = newType(ARRAY, copyType(tmp), atoi(varDec->sibling->sibling->val));
             varDec = varDec->child;
         }
+        p->fieldList->type = tmp;
     }
     return p;
 }
 
 void FunDec(Node* node, Type returnType) {
-    // FunDec -> ID LP VarList RP
-    //         | ID LP RP
-    TableItem p =
-        newItem(scope->layerDepth,
-                newFieldList(node->child->val,
-                             newType(FUNCTION, 0, NULL, copyType(returnType))));
+    TableItem p = newItem(scope->layerDepth, newFieldList(node->child->val,
+        newType(FUNCTION, 0, NULL, copyType(returnType))));
 
-    // FunDec -> ID LP VarList RP
     if (!strcmp(node->child->sibling->sibling->type, "VarList")) {
         VarList(node->child->sibling->sibling, p);
     }
 
-    // FunDec -> ID LP RP don't need process
-
-    // check redefine
     if (hasConfliction(p)) {
         char msg[MAX_MSG_LENGTH] = {0};
         sprintf(msg, "Redefined function \"%s\".", p->fieldList->name);
         Error(FUN_REDEF, node->lineno, msg);
         delItem(p);
-        p = NULL;
     } else {
         addTableItem(p);
     }
 }
 
 void VarList(Node* node, TableItem func) {
-    // VarList -> ParamDec COMMA VarList
-    //          | ParamDec
     innerLayer();
+
     int argc = 0;
-    Node* temp = node->child;
+    Node* tmp = node->child;
     FieldList cur = NULL;
 
-    // VarList -> ParamDec
-    FieldList paramDec = ParamDec(temp);
+    FieldList paramDec = ParamDec(tmp);
     func->fieldList->type->u.function.argv = copyFieldList(paramDec);
     cur = func->fieldList->type->u.function.argv;
     argc++;
 
-    // VarList -> ParamDec COMMA VarList
-    while (temp->sibling) {
-        temp = temp->sibling->sibling->child;
-        paramDec = ParamDec(temp);
+    while (tmp->sibling) {
+        tmp = tmp->sibling->sibling->child;
+        paramDec = ParamDec(tmp);
         if (paramDec) {
             cur->tail = copyFieldList(paramDec);
             cur = cur->tail;
             argc++;
         }
     }
-
     func->fieldList->type->u.function.argc = argc;
 
     outerLayer();
 }
 
 FieldList ParamDec(Node* node) {
-    // ParamDec -> Specifier VarDec
     Type specifierType = Specifier(node->child);
     TableItem p = VarDec(node->child->sibling, specifierType);
     if (specifierType) delType(specifierType);
@@ -631,23 +512,21 @@ FieldList ParamDec(Node* node) {
 }
 
 void CompSt(Node* node, Type returnType) {
-    // CompSt -> LC DefList StmtList RC
     innerLayer();
-    Node* temp = node->child->sibling;
-    if (!strcmp(temp->type, "DefList")) {
-        DefList(temp, NULL);
-        temp = temp->sibling;
+
+    Node* tmp = node->child->sibling;
+    if (!strcmp(tmp->type, "DefList")) {
+        DefList(tmp, NULL);
+        tmp = tmp->sibling;
     }
-    if (!strcmp(temp->type, "StmtList")) {
-        StmtList(temp, returnType);
+    if (!strcmp(tmp->type, "StmtList")) {
+        StmtList(tmp, returnType);
     }
 
     exitLayer();
 }
 
 void StmtList(Node* node, Type returnType) {
-    // StmtList -> Stmt StmtList
-    //           | e
     while (node) {
         Stmt(node->child, returnType);
         node = node->child->sibling;
@@ -655,42 +534,23 @@ void StmtList(Node* node, Type returnType) {
 }
 
 void Stmt(Node* node, Type returnType) {
-    // Stmt -> Exp SEMI
-    //       | CompSt
-    //       | RETURN Exp SEMI
-    //       | IF LP Exp RP Stmt
-    //       | IF LP Exp RP Stmt ELSE Stmt
-    //       | WHILE LP Exp RP Stmt
-
     Type expType = NULL;
-    // Stmt -> Exp SEMI
-    if (!strcmp(node->child->type, "Exp")) expType = Exp(node->child);
-
-    // Stmt -> CompSt
+    if (!strcmp(node->child->type, "Exp")) 
+        expType = Exp(node->child);
     else if (!strcmp(node->child->type, "CompSt"))
         CompSt(node->child, returnType);
-
-    // Stmt -> RETURN Exp SEMI
     else if (!strcmp(node->child->type, "RETURN")) {
         expType = Exp(node->child->sibling);
-
-        // check return type
         if (!compareType(returnType, expType))
             Error(RETURN_TYPE, node->lineno,
                    "Type mismatched for return.");
-    }
-
-    // Stmt -> IF LP Exp RP Stmt
-    else if (!strcmp(node->child->type, "IF")) {
+    } else if (!strcmp(node->child->type, "IF")) {
         Node* stmt = node->child->sibling->sibling->sibling->sibling;
         expType = Exp(node->child->sibling->sibling);
         Stmt(stmt, returnType);
-        // Stmt -> IF LP Exp RP Stmt ELSE Stmt
-        if (stmt->sibling != NULL) Stmt(stmt->sibling->sibling, returnType);
-    }
-
-    // Stmt -> WHILE LP Exp RP Stmt
-    else if (!strcmp(node->child->type, "WHILE")) {
+        if (stmt->sibling != NULL) 
+            Stmt(stmt->sibling->sibling, returnType);
+    } else if (!strcmp(node->child->type, "WHILE")) {
         expType = Exp(node->child->sibling->sibling);
         Stmt(node->child->sibling->sibling->sibling->sibling, returnType);
     }
@@ -699,8 +559,6 @@ void Stmt(Node* node, Type returnType) {
 }
 
 void DefList(Node* node, TableItem structInfo) {
-    // DefList -> Def DefList
-    //          | e
     while (node) {
         Def(node->child, structInfo);
         node = node->child->sibling;
@@ -708,225 +566,132 @@ void DefList(Node* node, TableItem structInfo) {
 }
 
 void Def(Node* node, TableItem structInfo) {
-    // Def -> Specifier DecList SEMI
     Type dectype = Specifier(node->child);
     DecList(node->child->sibling, dectype, structInfo);
     if (dectype) delType(dectype);
 }
 
 void DecList(Node* node, Type specifier, TableItem structInfo) {
-    // DecList -> Dec
-    //          | Dec COMMA DecList
-    Node* temp = node;
-    while (temp) {
-        Dec(temp->child, specifier, structInfo);
-        if (temp->child->sibling)
-            temp = temp->child->sibling->sibling;
+    Node* tmp = node;
+    while (tmp) {
+        Dec(tmp->child, specifier, structInfo);
+        if (tmp->child->sibling)
+            tmp = tmp->child->sibling->sibling;
         else
             break;
     }
 }
 
 void Dec(Node* node, Type specifier, TableItem structInfo) {
-    // Dec -> VarDec
-    //      | VarDec ASSIGNOP Exp
-
-    // Dec -> VarDec
     if (node->child->sibling == NULL) {
         if (structInfo != NULL) {
-            // 结构体内，将VarDec返回的Item中的filedList
-            // Copy判断是否重定义，无错则到结构体链表尾 记得del掉Item
-            TableItem decitem = VarDec(node->child, specifier);
-            FieldList payload = decitem->fieldList;
+            TableItem decItem = VarDec(node->child, specifier);
             FieldList structField = structInfo->fieldList->type->u.structure.fieldList;
             FieldList last = NULL;
             while (structField != NULL) {
-                // then we have to check
-                if (!strcmp(payload->name, structField->name)) {
-                    //出现重定义，报错
+                if (!strcmp(decItem->fieldList->name, structField->name)) {
                     char msg[MAX_MSG_LENGTH] = {0};
                     sprintf(msg, "Redefined field \"%s\".",
-                            decitem->fieldList->name);
+                            decItem->fieldList->name);
                     Error(FIELD_REDEF, node->lineno, msg);
-                    delItem(decitem);
+                    delItem(decItem);
                     return;
                 } else {
                     last = structField;
                     structField = structField->tail;
                 }
             }
-            //新建一个fieldlist,删除之前的item
+            
             if (last == NULL) {
-                // that is good
                 structInfo->fieldList->type->u.structure.fieldList =
-                    copyFieldList(decitem->fieldList);
+                    copyFieldList(decItem->fieldList);
             } else {
-                last->tail = copyFieldList(decitem->fieldList);
+                last->tail = copyFieldList(decItem->fieldList);
             }
-            delItem(decitem);
+            delItem(decItem);
         } else {
-            // 非结构体内，判断返回的item有无冲突，无冲突放入表中，有冲突报错del
-            TableItem decitem = VarDec(node->child, specifier);
-            if (hasConfliction(decitem)) {
-                //出现冲突，报错
+            TableItem decItem = VarDec(node->child, specifier);
+            if (hasConfliction(decItem)) {
                 char msg[MAX_MSG_LENGTH] = {0};
-                sprintf(msg, "Redefined variable \"%s\".",
-                        decitem->fieldList->name);
+                sprintf(msg, "Redefined variable \"%s\".", decItem->fieldList->name);
                 Error(VAR_REDEF, node->lineno, msg);
-                delItem(decitem);
+                delItem(decItem);
             } else {
-                addTableItem(decitem);
+                addTableItem(decItem);
             }
         }
-    }
-    // Dec -> VarDec ASSIGNOP Exp
-    else {
+    } else {
+        // TODO: STRUCT & ARRAY ASSIGN
         if (structInfo != NULL) {
-            // 结构体内不能赋值，报错
-            Error(FIELD_REDEF, node->lineno,
-                   "Illegal initialize variable in struct.");
+            Error(ASSIGN_TYPE, node->lineno,
+                   "Cannot initiate in a struct definition.");
         } else {
-            // 判断赋值类型是否相符
-            //如果成功，注册该符号
-            TableItem decitem = VarDec(node->child, specifier);
+            TableItem decItem = VarDec(node->child, specifier);
             Type exptype = Exp(node->child->sibling->sibling);
-            if (hasConfliction(decitem)) {
-                //出现冲突，报错
+            if (hasConfliction(decItem)) {
                 char msg[MAX_MSG_LENGTH] = {0};
-                sprintf(msg, "Redefined variable \"%s\".",
-                        decitem->fieldList->name);
+                sprintf(msg, "Redefined variable \"%s\".", decItem->fieldList->name);
                 Error(VAR_REDEF, node->lineno, msg);
-                delItem(decitem);
-            }
-            if (!compareType(decitem->fieldList->type, exptype)) {
-                //类型不相符
-                //报错
-                Error(ASSIGN_TYPE, node->lineno,
-                       "Type mismatchedfor assignment.");
-                delItem(decitem);
-            }
-            if (decitem->fieldList->type && decitem->fieldList->type->kind == ARRAY) {
-                //报错，对非basic类型赋值
-                Error(ASSIGN_TYPE, node->lineno,
-                       "Illegal initialize variable.");
-                delItem(decitem);
+                delItem(decItem);
+            } else if (!compareType(decItem->fieldList->type, exptype)) {
+                Error(ASSIGN_TYPE, node->lineno, "Cannot cast for assignment.");
+                delItem(decItem);
             } else {
-                addTableItem(decitem);
+                addTableItem(decItem);
             }
-            // exp不出意外应该返回一个无用的type，删除
+
             if (exptype) delType(exptype);
         }
     }
 }
 
 Type Exp(Node* node) {
-    // Exp -> Exp ASSIGNOP Exp
-    //      | Exp AND Exp
-    //      | Exp OR Exp
-    //      | Exp RELOP Exp
-    //      | Exp PLUS Exp
-    //      | Exp MINUS Exp
-    //      | Exp STAR Exp
-    //      | Exp DIV Exp
-    //      | LP Exp RP
-    //      | MINUS Exp
-    //      | NOT Exp
-    //      | ID LP Args RP
-    //      | ID LP RP
-    //      | Exp LB Exp RB
-    //      | Exp DOT ID
-    //      | ID
-    //      | INT
-    //      | FLOAT
     Node* t = node->child;
-    // exp will only check if the cal is right
-    //  printTable(table);
-    //二值运算
     if (!strcmp(t->type, "Exp")) {
-        // 基本数学运算符
         if (strcmp(t->sibling->type, "LB") && strcmp(t->sibling->type, "DOT")) {
             Type p1 = Exp(t);
             Type p2 = Exp(t->sibling->sibling);
             Type returnType = NULL;
 
-            // Exp -> Exp ASSIGNOP Exp
             if (!strcmp(t->sibling->type, "ASSIGNOP")) {
-                //检查左值
                 Node* tchild = t->child;
 
-                if (!strcmp(tchild->type, "FLOAT") ||
-                    !strcmp(tchild->type, "INT")) {
-                    //报错，左值
-                    Error(ASSIGN_RVAL, t->lineno,
-                           "The left-hand side of an assignment must be "
-                           "avariable.");
-
-                } else if (!strcmp(tchild->type, "ID") ||
-                           !strcmp(tchild->sibling->type, "LB") ||
-                           !strcmp(tchild->sibling->type, "DOT")) {
-                    if (!compareType(p1, p2)) {
-                        //报错，类型不匹配
-                        Error(ASSIGN_TYPE, t->lineno,
-                               "Type mismatched for assignment.");
-                    } else
-                        returnType = copyType(p1);
+                if (!strcmp(tchild->type, "ID") ||
+                    !strcmp(tchild->sibling->type, "LB") ||
+                    !strcmp(tchild->sibling->type, "DOT")) {
+                    if (!compareType(p1, p2))
+                            Error(ASSIGN_TYPE, t->lineno, "Cannot cast type for assignment.");
+                    else
+                            returnType = copyType(p1);
                 } else {
-                    //报错，左值
                     Error(ASSIGN_RVAL, t->lineno,
-                           "The left-hand side of an assignment must be "
-                           "avariable.");
+                        "The left-hand side of an assignment cannot be a right-value.");
                 }
-
-            }
-            // Exp -> Exp AND Exp
-            //      | Exp OR Exp
-            //      | Exp RELOP Exp
-            //      | Exp PLUS Exp
-            //      | Exp MINUS Exp
-            //      | Exp STAR Exp
-            //      | Exp DIV Exp
-            else {
-                if (p1 && p2 && (p1->kind == ARRAY || p2->kind == ARRAY)) {
-                    //报错，数组，结构体运算
-                    Error(OP_TYPE, t->lineno,
-                           "Type mismatched for operands.");
-                } else if (!compareType(p1, p2)) {
-                    //报错，类型不匹配
-                    Error(OP_TYPE, t->lineno,
-                           "Type mismatched for operands.");
-                } else {
-                    if (p1 && p2) {
-                        returnType = copyType(p1);
-                    }
-                }
+            } else {
+                if (p1 && p2 && (p1->kind == ARRAY || p2->kind == ARRAY))
+                    Error(OP_TYPE, t->lineno, "Cannot operate two array.");
+                else if (!compareType(p1, p2))
+                    Error(OP_TYPE, t->lineno, "Cannot operate two different type.");
+                else if (p1 && p2)
+                    returnType = copyType(p1);
             }
 
             if (p1) delType(p1);
             if (p2) delType(p2);
             return returnType;
-        }
-        // 数组和结构体访问
-        else {
-            // Exp -> Exp LB Exp RB
+        } else {
             if (!strcmp(t->sibling->type, "LB")) {
-                //数组
                 Type p1 = Exp(t);
                 Type p2 = Exp(t->sibling->sibling);
                 Type returnType = NULL;
 
-                if (!p1) {
-                    // 第一个exp为null，上层报错，这里不用再管
-                } else if (p1 && p1->kind != ARRAY) {
-                    //报错，非数组使用[]运算符
+                if (p1 && p1->kind != ARRAY) {
                     char msg[MAX_MSG_LENGTH] = {0};
                     sprintf(msg, "\"%s\" is not an array.", t->child->val);
                     Error(NOT_ARRAY, t->lineno, msg);
-                } else if (!p2 || p2->kind != BASIC ||
-                           p2->u.basic != 0) {
-                    //报错，不用int索引[]
+                } else if (!p2 || p2->kind != BASIC || p2->u.basic != 0) {
                     char msg[MAX_MSG_LENGTH] = {0};
-                    sprintf(msg, "\"%s\" is not an integer.",
-                            t->sibling->sibling->child->val);
+                    sprintf(msg, "\"%s\" is not an integer.", t->sibling->sibling->child->val);
                     Error(NOT_INT, t->lineno, msg);
                 } else {
                     returnType = copyType(p1->u.array.elem);
@@ -934,29 +699,26 @@ Type Exp(Node* node) {
                 if (p1) delType(p1);
                 if (p2) delType(p2);
                 return returnType;
-            }
-            // Exp -> Exp DOT ID
-            else {
+            } else {
                 Type p1 = Exp(t);
                 Type returnType = NULL;
-                if (!p1 || p1->kind != STRUCTURE ||
-                    !p1->u.structure.name) {
-                    //报错，对非结构体使用.运算符
-                    Error(NOT_STRUCT, t->lineno, "Illegal use of \".\".");
+                if (!p1 || p1->kind != STRUCTURE || !p1->u.structure.name) {
+                    char msg[MAX_MSG_LENGTH] = {0};
+                    sprintf(msg, "\"%s\" is not a struct.", t->child->val);
+                    Error(NOT_STRUCT, t->lineno, msg);
                 } else {
-                    Node* ref_id = t->sibling->sibling;
+                    Node* field = t->sibling->sibling;
                     FieldList structfield = p1->u.structure.fieldList;
                     while (structfield != NULL) {
-                        if (!strcmp(structfield->name, ref_id->val)) {
+                        if (!strcmp(structfield->name, field->val)) {
                             break;
                         }
                         structfield = structfield->tail;
                     }
                     if (structfield == NULL) {
-                        //报错，没有可以匹配的域名
-                        printf("Error type %d at Line %d: %s.\n", 14, t->lineno,
-                               "non-existed field");
-                        ;
+                        char msg[MAX_MSG_LENGTH] = {0};
+                        sprintf(msg, "field %s is non-existed.", field->val);
+                        Error(FIELD_UNDEF, t->lineno, msg);
                     } else {
                         returnType = copyType(structfield->type);
                     }
@@ -965,17 +727,13 @@ Type Exp(Node* node) {
                 return returnType;
             }
         }
-    }
-    //单目运算符
-    // Exp -> MINUS Exp
-    //      | NOT Exp
-    else if (!strcmp(t->type, "MINUS") || !strcmp(t->type, "NOT")) {
+    } else if (!strcmp(t->type, "MINUS") || !strcmp(t->type, "NOT")) {
         Type p1 = Exp(t->sibling);
         Type returnType = NULL;
         if (!p1 || p1->kind != BASIC) {
-            //报错，数组，结构体运算
-            printf("Error type %d at Line %d: %s.\n", 7, t->lineno,
-                   "OP_TYPE");
+            char msg[MAX_MSG_LENGTH] = {0};
+            sprintf(msg, "Cannot operate non-basic type %s.", t->val);
+            Error(OP_TYPE, t->lineno, msg);
         } else {
             returnType = copyType(p1);
         }
@@ -983,44 +741,32 @@ Type Exp(Node* node) {
         return returnType;
     } else if (!strcmp(t->type, "LP")) {
         return Exp(t->sibling);
-    }
-    // Exp -> ID LP Args RP
-    //		| ID LP RP
-    else if (!strcmp(t->type, "ID") && t->sibling) {
-        TableItem funcInfo = searchTableItem(t->val);
+    } else if (!strcmp(t->type, "ID") && t->sibling) {
+        TableItem funInfo = searchTableItem(t->val);
 
-        // function not find
-        if (funcInfo == NULL) {
+        if (funInfo == NULL) {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "Undefined function \"%s\".", t->val);
             Error(FUN_UNDEF, node->lineno, msg);
             return NULL;
-        } else if (funcInfo->fieldList->type->kind != FUNCTION) {
+        } else if (funInfo->fieldList->type->kind != FUNCTION) {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "\"%s\" is not a function.", t->val);
             Error(NOT_FUN, node->lineno, msg);
             return NULL;
-        }
-        // Exp -> ID LP Args RP
-        else if (!strcmp(t->sibling->sibling->type, "Args")) {
-            Args(t->sibling->sibling, funcInfo);
-            return copyType(funcInfo->fieldList->type->u.function.rType);
-        }
-        // Exp -> ID LP RP
-        else {
-            if (funcInfo->fieldList->type->u.function.argc != 0) {
+        } else if (!strcmp(t->sibling->sibling->type, "Args")) {
+            Args(t->sibling->sibling, funInfo);
+            return copyType(funInfo->fieldList->type->u.function.rType);
+        } else {
+            if (funInfo->fieldList->type->u.function.argc != 0) {
                 char msg[MAX_MSG_LENGTH] = {0};
-                sprintf(msg,
-                        "too few arguments to function \"%s\", except %d args.",
-                        funcInfo->fieldList->name,
-                        funcInfo->fieldList->type->u.function.argc);
+                sprintf(msg, "too few arguments to function \"%s\", except %d args.",
+                    funInfo->fieldList->name, funInfo->fieldList->type->u.function.argc);
                 Error(ARG_INCOMPATIBLE, node->lineno, msg);
             }
-            return copyType(funcInfo->fieldList->type->u.function.rType);
+            return copyType(funInfo->fieldList->type->u.function.rType);
         }
-    }
-    // Exp -> ID
-    else if (!strcmp(t->type, "ID")) {
+    } else if (!strcmp(t->type, "ID")) {
         TableItem tp = searchTableItem(t->val);
         if (tp == NULL || isStructDef(tp)) {
             char msg[MAX_MSG_LENGTH] = {0};
@@ -1031,39 +777,33 @@ Type Exp(Node* node) {
             return copyType(tp->fieldList->type);
         }
     } else {
-        // Exp -> FLOAT
-        if (!strcmp(t->type, "FLOAT")) {
-            return newType(BASIC, 1);
-        }
-        // Exp -> INT
-        else {
+        if (!strcmp(t->type, "INT")) {
             return newType(BASIC, 0);
+        }
+        else {
+            return newType(BASIC, 1);
         }
     }
 }
 
-void Args(Node* node, TableItem funcInfo) {
-    // Args -> Exp COMMA Args
-    //       | Exp
+void Args(Node* node, TableItem funInfo) {
+    Node* tmp = node;
+    FieldList arg = funInfo->fieldList->type->u.function.argv;
 
-    Node* temp = node;
-    FieldList arg = funcInfo->fieldList->type->u.function.argv;
-
-    while (temp) {
+    while (tmp) {
         if (arg == NULL) {
             char msg[MAX_MSG_LENGTH] = {0};
-            sprintf(
-                msg, "too many arguments to function \"%s\", except %d args.",
-                funcInfo->fieldList->name, funcInfo->fieldList->type->u.function.argc);
+            sprintf(msg, "too many arguments to function \"%s\", except %d args.",
+                funInfo->fieldList->name, funInfo->fieldList->type->u.function.argc);
             Error(ARG_INCOMPATIBLE, node->lineno, msg);
             break;
         }
-        Type realType = Exp(temp->child);
+        Type realType = Exp(tmp->child);
 
         if (!compareType(realType, arg->type)) {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "Function \"%s\" is not applicable for arguments.",
-                    funcInfo->fieldList->name);
+                    funInfo->fieldList->name);
             Error(ARG_INCOMPATIBLE, node->lineno, msg);
             if (realType) delType(realType);
             return;
@@ -1071,16 +811,16 @@ void Args(Node* node, TableItem funcInfo) {
         if (realType) delType(realType);
 
         arg = arg->tail;
-        if (temp->child->sibling) {
-            temp = temp->child->sibling->sibling;
-        } else {
+        if (tmp->child->sibling)
+            tmp = tmp->child->sibling->sibling;
+        else
             break;
-        }
     }
+
     if (arg != NULL) {
         char msg[MAX_MSG_LENGTH] = {0};
         sprintf(msg, "too few arguments to function \"%s\", except %d args.",
-                funcInfo->fieldList->name, funcInfo->fieldList->type->u.function.argc);
+                funInfo->fieldList->name, funInfo->fieldList->type->u.function.argc);
         Error(ARG_INCOMPATIBLE, node->lineno, msg);
     }
 }

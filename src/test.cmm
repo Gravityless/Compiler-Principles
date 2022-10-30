@@ -1,11 +1,8 @@
-struct Position
-{
-    float x, y;
+struct A {
+    int a;
 };
 
 int main()
 {
-    struct Position p;
-    if (p.n == 3.7)
-        return 0;
+    float j = 1;
 }

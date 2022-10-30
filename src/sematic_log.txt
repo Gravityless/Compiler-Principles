@@ -3,9 +3,9 @@ initTable.
 newHashTable.
 newScope.
 start tranverse Program.
-start tranverse ExtDefList.
-start tranverse ExtDef.
-genExtDef.
+start tranverse genExtDefList.
+start tranverse genExtDef.
+gengenExtDef.
 genSpecifier TYPE: int.
 newType.
 genFunDec.
