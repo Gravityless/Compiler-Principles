@@ -24,6 +24,7 @@ struct FieldList_
 {
     char* name;
     Type type;
+    bool isArg;
     FieldList tail;
 };
 

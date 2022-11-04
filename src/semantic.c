@@ -116,6 +116,7 @@ FieldList newFieldList(char* newName, Type newType) {
     FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
     p->name = newString(newName);
     p->type = newType;
+    p->isArg = false;
     p->tail = NULL;
     return p;
 }
@@ -507,6 +508,7 @@ FieldList ParamDec(Node* node) {
         delItem(p);
         return NULL;
     } else {
+        p->fieldList->isArg = true;
         addTableItem(p);
         return p->fieldList;
     }
