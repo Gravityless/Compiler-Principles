@@ -87,7 +87,7 @@ extern InterCodeList interCodeList;
 // Operand func
 Operand newOperand(int kind, ...);
 void deleteOperand(Operand p);
-void setOperand(Operand p, int kind, void* val);
+void setOperand(Operand p, int kind, char* val);
 void printOp(FILE* fp, Operand op);
 
 // InterCode func

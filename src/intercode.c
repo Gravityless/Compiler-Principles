@@ -27,13 +27,13 @@ Operand newOperand(int kind, ...) {
     return p;
 }
 
-void setOperand(Operand p, int kind, void* val) {
+void setOperand(Operand p, int kind, char* val) {
     assert(p != NULL);
     assert(kind >= 0 && kind < 6);
     p->kind = kind;
     switch (kind) {
         case OP_CONSTANT:
-            p->u.value = (int)val;
+            p->u.value = atoi(val);
             break;
         case OP_VARIABLE:
         case OP_ADDRESS:
@@ -41,7 +41,7 @@ void setOperand(Operand p, int kind, void* val) {
         case OP_FUNCTION:
         case OP_RELOP:
             if (p->u.name) free(p->u.name);
-            p->u.name = (char*)val;
+            p->u.name = val;
             break;
     }
 }
@@ -772,7 +772,7 @@ void transVarDec(Node *node, Operand place) {
                 interCodeList->tempVarNum--;
                 printf("debuger: set operand\n");
                 setOperand(place, OP_VARIABLE,
-                           (void*)newString(temp->fieldList->name));
+                           newString(temp->fieldList->name));
             }
         } else if (type->kind == ARRAY) {
             // 不需要完成高维数组情况
@@ -1047,7 +1047,7 @@ void transExp(Node *node, Operand place) {
                 if (place) {
                     genInterCode(IR_ADD, place, target, tOffset);
                     // 为了处理结构体里的数组把id名通过place回传给上层
-                    setOperand(place, OP_ADDRESS, (void*)newString(id->u.name));
+                    setOperand(place, OP_ADDRESS, newString(id->u.name));
                     // place->isAddr = true;
                 }
             }
@@ -1134,12 +1134,12 @@ void transExp(Node *node, Operand place) {
         // 根据讲义，因为结构体不允许赋值，结构体做形参时是传址的方式
         interCodeList->tempVarNum--;
         if (item->fieldList->isArg && item->fieldList->type->kind == STRUCTURE) {
-            setOperand(place, OP_ADDRESS, (void*)newString(node->child->val));
+            setOperand(place, OP_ADDRESS, newString(node->child->val));
             // place->isAddr = true;
         }
         // 非结构体参数情况都当做变量处理
         else {
-            setOperand(place, OP_VARIABLE, (void*)newString(node->child->val));
+            setOperand(place, OP_VARIABLE, newString(node->child->val));
         }
 
         // Operand t1 = newOperand(OP_VARIABLE, id_name->field->name);
@@ -1154,7 +1154,7 @@ void transExp(Node *node, Operand place) {
 
         // Exp -> INT
         interCodeList->tempVarNum--;
-        setOperand(place, OP_CONSTANT, (void*)atoi(node->child->val));
+        setOperand(place, OP_CONSTANT, node->child->val);
         // Operand t1 = newOperand(OP_CONSTANT, node->child->val);
         // genInterCode(IR_ASSIGN, place, t1);
     }
