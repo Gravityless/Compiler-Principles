@@ -5,12 +5,12 @@ InterCodeList interCodeList;
 
 // Operand func
 Operand newOperand(int kind, ...) {
-    Operand p = (Operand)malloc(sizeof(Operand));
+    Operand p = (Operand)malloc(sizeof(struct Operand_));
     assert(p != NULL);
     p->kind = kind;
     va_list vaList;
     assert(kind >= 0 && kind < 6);
-    va_start(vaList, 1);
+    va_start(vaList, kind);
     switch (kind) {
         case OP_CONSTANT:
             p->u.value = va_arg(vaList, int);
@@ -23,8 +23,6 @@ Operand newOperand(int kind, ...) {
             p->u.name = va_arg(vaList, char*);
             break;
     }
-
-    // p->isAddr = false;
 
     return p;
 }
@@ -101,7 +99,7 @@ void printOp(FILE* fp, Operand op) {
 
 // InterCode func
 InterCode newInterCode(int kind, ...) {
-    InterCode p = (InterCode)malloc(sizeof(InterCode));
+    InterCode p = (InterCode)malloc(sizeof(struct InterCode_));
     assert(p != NULL);
     p->kind = kind;
     va_list vaList;
@@ -115,7 +113,7 @@ InterCode newInterCode(int kind, ...) {
         case IR_PARAM:
         case IR_READ:
         case IR_WRITE:
-            va_start(vaList, 1);
+            va_start(vaList, kind);
             p->u.sinOp.op = va_arg(vaList, Operand);
             break;
         case IR_ASSIGN:
@@ -123,7 +121,7 @@ InterCode newInterCode(int kind, ...) {
         case IR_READ_ADDR:
         case IR_WRITE_ADDR:
         case IR_CALL:
-            va_start(vaList, 2);
+            va_start(vaList, kind);
             p->u.assign.left = va_arg(vaList, Operand);
             p->u.assign.right = va_arg(vaList, Operand);
             break;
@@ -131,18 +129,18 @@ InterCode newInterCode(int kind, ...) {
         case IR_SUB:
         case IR_MUL:
         case IR_DIV:
-            va_start(vaList, 3);
+            va_start(vaList, kind);
             p->u.binOp.result = va_arg(vaList, Operand);
             p->u.binOp.op1 = va_arg(vaList, Operand);
             p->u.binOp.op2 = va_arg(vaList, Operand);
             break;
         case IR_DEC:
-            va_start(vaList, 2);
+            va_start(vaList, kind);
             p->u.dec.op = va_arg(vaList, Operand);
             p->u.dec.size = va_arg(vaList, int);
             break;
         case IR_IF_GOTO:
-            va_start(vaList, 4);
+            va_start(vaList, kind);
             p->u.ifGoto.x = va_arg(vaList, Operand);
             p->u.ifGoto.relop = va_arg(vaList, Operand);
             p->u.ifGoto.y = va_arg(vaList, Operand);
@@ -418,7 +416,7 @@ void printInterCode(FILE* fp, InterCodeList interCodeList) {
 
 // InterCodes func
 InterCodes newInterCodes(InterCode code) {
-    InterCodes p = (InterCodes)malloc(sizeof(InterCodes));
+    InterCodes p = (InterCodes)malloc(sizeof(struct InterCodes_));
     assert(p != NULL);
     p->code = code;
     p->prev = NULL;
@@ -433,14 +431,14 @@ void deleteInterCodes(InterCodes p) {
 
 // Arg and ArgList func
 Arg newArg(Operand op) {
-    Arg p = (Arg)malloc(sizeof(Arg));
+    Arg p = (Arg)malloc(sizeof(struct Arg_));
     assert(p != NULL);
     p->op = op;
     p->next = NULL;
 }
 
 ArgList newArgList() {
-    ArgList p = (ArgList)malloc(sizeof(ArgList));
+    ArgList p = (ArgList)malloc(sizeof(struct ArgList_));
     assert(p != NULL);
     p->head = NULL;
     p->cur = NULL;
@@ -475,7 +473,7 @@ void addArg(ArgList argList, Arg arg) {
 
 // InterCodeList func
 InterCodeList newInterCodeList() {
-    InterCodeList p = (InterCodeList)malloc(sizeof(InterCodeList));
+    InterCodeList p = (InterCodeList)malloc(sizeof(struct InterCodeList_));
     p->head = NULL;
     p->cur = NULL;
     p->lastArrayName = NULL;
@@ -545,7 +543,7 @@ int getSize(Type type) {
 void genInterCodes(Node *node) {
     if (node == NULL) return;
     if (!strcmp(node->type, "ExtDefList"))
-        translateExtDefList(node);
+        transExtDefList(node);
     else {
         genInterCodes(node->child);
         genInterCodes(node->sibling);
@@ -568,7 +566,7 @@ void genInterCode(int kind, ...) {
         case IR_PARAM:
         case IR_READ:
         case IR_WRITE:
-            va_start(vaList, 1);
+            va_start(vaList, kind);
             op1 = va_arg(vaList, Operand);
             if (op1->kind == OP_ADDRESS) {
                 temp = newTemp();
@@ -583,7 +581,7 @@ void genInterCode(int kind, ...) {
         case IR_READ_ADDR:
         case IR_WRITE_ADDR:
         case IR_CALL:
-            va_start(vaList, 2);
+            va_start(vaList, kind);
             op1 = va_arg(vaList, Operand);
             op2 = va_arg(vaList, Operand);
             if (kind == IR_ASSIGN &&
@@ -606,7 +604,7 @@ void genInterCode(int kind, ...) {
         case IR_SUB:
         case IR_MUL:
         case IR_DIV:
-            va_start(vaList, 3);
+            va_start(vaList, kind);
             result = va_arg(vaList, Operand);
             op1 = va_arg(vaList, Operand);
             op2 = va_arg(vaList, Operand);
@@ -624,16 +622,14 @@ void genInterCode(int kind, ...) {
             addInterCode(interCodeList, newCode);
             break;
         case IR_DEC:
-            // TODO:
-            va_start(vaList, 2);
+            va_start(vaList, kind);
             op1 = va_arg(vaList, Operand);
             size = va_arg(vaList, int);
             newCode = newInterCodes(newInterCode(kind, op1, size));
             addInterCode(interCodeList, newCode);
             break;
         case IR_IF_GOTO:
-            // TODO:
-            va_start(vaList, 4);
+            va_start(vaList, kind);
             result = va_arg(vaList, Operand);
             relop = va_arg(vaList, Operand);
             op1 = va_arg(vaList, Operand);
@@ -644,16 +640,16 @@ void genInterCode(int kind, ...) {
             break;
     }
 }
-void translateExtDefList(Node *node) {
+void transExtDefList(Node *node) {
     // ExtDefList -> ExtDef ExtDefList
     //             | e
     while (node) {
-        translateExtDef(node->child);
+        transExtDef(node->child);
         node = node->child->sibling;
     }
 }
 
-void translateExtDef(Node *node) {
+void transExtDef(Node *node) {
     assert(node != NULL);
     if (interError) return;
     // ExtDef -> Specifier ExtDecList SEMI
@@ -663,12 +659,12 @@ void translateExtDef(Node *node) {
     // 因为没有全局变量使用，
     // ExtDecList不涉及中间代码生成，类型声明也不涉及，所以只需要处理FunDec和CompSt
     if (!strcmp(node->child->sibling->type, "FunDec")) {
-        translateFunDec(node->child->sibling);
-        translateCompSt(node->child->sibling->sibling);
+        transFunDec(node->child->sibling);
+        transCompSt(node->child->sibling->sibling);
     }
 }
 
-void translateFunDec(Node *node) {
+void transFunDec(Node *node) {
     assert(node != NULL);
     if (interError) return;
     // FunDec -> ID LP VarList RP
@@ -682,53 +678,55 @@ void translateFunDec(Node *node) {
     TableItem funcItem = searchTableItem(node->child->val);
     FieldList temp = funcItem->fieldList->type->u.function.argv;
     while (temp) {
-        genInterCode(IR_PARAM, newOperand(OP_VARIABLE, newString(temp->type)));
+        genInterCode(IR_PARAM, newOperand(OP_VARIABLE, newString(temp->name)));
         // InterCodes arg = newInterCodes(newInterCode(
-        //     IR_PARAM, newOperand(OP_VARIABLE, newString(temp->type))));
+        //     IR_PARAM, newOperand(OP_VARIABLE, newString(temp->name))));
         // addInterCode(interCodeList, arg);
         temp = temp->tail;
     }
 }
 
-void translateCompSt(Node *node) {
+void transCompSt(Node *node) {
     assert(node != NULL);
     if (interError) return;
+    printf("debuger: translate compst\n");
     // CompSt -> LC DefList StmtList RC
     Node *temp = node->child->sibling;
+    printf("debuger: translate deflist\n");
     if (!strcmp(temp->type, "DefList")) {
-        translateDefList(temp);
-        temp = temp->sibling;
+        transDefList(temp);
     }
+    printf("debuger: translate stmtlist\n");
     if (!strcmp(temp->type, "StmtList")) {
-        translateStmtList(temp);
+        transStmtList(temp);
     }
 }
 
-void translateDefList(Node *node) {
+void transDefList(Node *node) {
     if (interError) return;
     // DefList -> Def DefList
     //          | e
     while (node) {
-        translateDef(node->child);
+        transDef(node->child);
         node = node->child->sibling;
     }
 }
 
-void translateDef(Node *node) {
+void transDef(Node *node) {
     assert(node != NULL);
     if (interError) return;
     // Def -> Specifier DecList SEMI
-    translateDecList(node->child->sibling);
+    transDecList(node->child->sibling);
 }
 
-void translateDecList(Node *node) {
+void transDecList(Node *node) {
     assert(node != NULL);
     if (interError) return;
     // DecList -> Dec
     //          | Dec COMMA DecList
     Node *temp = node;
     while (temp) {
-        translateDec(temp->child);
+        transDec(temp->child);
         if (temp->child->sibling)
             temp = temp->child->sibling->sibling;
         else
@@ -736,7 +734,7 @@ void translateDecList(Node *node) {
     }
 }
 
-void translateDec(Node *node) {
+void transDec(Node *node) {
     assert(node != NULL);
     if (interError) return;
     // Dec -> VarDec
@@ -744,30 +742,35 @@ void translateDec(Node *node) {
 
     // Dec -> VarDec
     if (node->child->sibling == NULL) {
-        translateVarDec(node->child, NULL);
+        transVarDec(node->child, NULL);
     }
     // Dec -> VarDec ASSIGNOP Exp
     else {
         Operand t1 = newTemp();
-        translateVarDec(node->child, t1);
+        transVarDec(node->child, t1);
         Operand t2 = newTemp();
-        translateExp(node->child->sibling->sibling, t2);
+        transExp(node->child->sibling->sibling, t2);
         genInterCode(IR_ASSIGN, t1, t2);
     }
 }
 
-void translateVarDec(Node *node, Operand place) {
+void transVarDec(Node *node, Operand place) {
     assert(node != NULL);
     if (interError) return;
     // VarDec -> ID
     //         | VarDec LB INT RB
 
     if (!strcmp(node->child->type, "ID")) {
+        printf("translate id\n");
+        printf("search id\n");
         TableItem temp = searchTableItem(node->child->val);
+        if (temp) printf("debuger: founded\n");
+        else printf("debuger: unfound\n");
         Type type = temp->fieldList->type;
         if (type->kind == BASIC) {
             if (place) {
                 interCodeList->tempVarNum--;
+                printf("debuger: set operand\n");
                 setOperand(place, OP_VARIABLE,
                            (void*)newString(temp->fieldList->name));
             }
@@ -793,21 +796,21 @@ void translateVarDec(Node *node, Operand place) {
                          getSize(type));
         }
     } else {
-        translateVarDec(node->child, place);
+        transVarDec(node->child, place);
     }
 }
 
-void translateStmtList(Node *node) {
+void transStmtList(Node *node) {
     if (interError) return;
     // StmtList -> Stmt StmtList
     //           | e
     while (node) {
-        translateStmt(node->child);
+        transStmt(node->child);
         node = node->child->sibling;
     }
 }
 
-void translateStmt(Node *node) {
+void transStmt(Node *node) {
     assert(node != NULL);
     if (interError) return;
     // Stmt -> Exp SEMI
@@ -820,18 +823,18 @@ void translateStmt(Node *node) {
     // Stmt -> Exp SEMI
 
     if (!strcmp(node->child->type, "Exp")) {
-        translateExp(node->child, NULL);
+        transExp(node->child, NULL);
     }
 
     // Stmt -> CompSt
     else if (!strcmp(node->child->type, "CompSt")) {
-        translateCompSt(node->child);
+        transCompSt(node->child);
     }
 
     // Stmt -> RETURN Exp SEMI
     else if (!strcmp(node->child->type, "RETURN")) {
         Operand t1 = newTemp();
-        translateExp(node->child->sibling, t1);
+        transExp(node->child->sibling, t1);
         genInterCode(IR_RETURN, t1);
     }
 
@@ -842,9 +845,9 @@ void translateStmt(Node *node) {
         Operand label1 = newLabel();
         Operand label2 = newLabel();
 
-        translateCond(exp, label1, label2);
+        transCond(exp, label1, label2);
         genInterCode(IR_LABEL, label1);
-        translateStmt(stmt);
+        transStmt(stmt);
         if (stmt->sibling == NULL) {
             genInterCode(IR_LABEL, label2);
         }
@@ -853,7 +856,7 @@ void translateStmt(Node *node) {
             Operand label3 = newLabel();
             genInterCode(IR_GOTO, label3);
             genInterCode(IR_LABEL, label2);
-            translateStmt(stmt->sibling->sibling);
+            transStmt(stmt->sibling->sibling);
             genInterCode(IR_LABEL, label3);
         }
 
@@ -866,15 +869,15 @@ void translateStmt(Node *node) {
         Operand label3 = newLabel();
 
         genInterCode(IR_LABEL, label1);
-        translateCond(node->child->sibling->sibling, label2, label3);
+        transCond(node->child->sibling->sibling, label2, label3);
         genInterCode(IR_LABEL, label2);
-        translateStmt(node->child->sibling->sibling->sibling->sibling);
+        transStmt(node->child->sibling->sibling->sibling->sibling);
         genInterCode(IR_GOTO, label1);
         genInterCode(IR_LABEL, label3);
     }
 }
 
-void translateExp(Node *node, Operand place) {
+void transExp(Node *node, Operand place) {
     assert(node != NULL);
     if (interError) return;
     // Exp -> Exp ASSIGNOP Exp
@@ -898,7 +901,7 @@ void translateExp(Node *node, Operand place) {
 
     // Exp -> LP Exp RP
     if (!strcmp(node->child->type, "LP"))
-        translateExp(node->child->sibling, place);
+        transExp(node->child->sibling, place);
 
     else if (!strcmp(node->child->type, "Exp") ||
              !strcmp(node->child->type, "NOT")) {
@@ -918,22 +921,22 @@ void translateExp(Node *node, Operand place) {
                 Operand true_num = newOperand(OP_CONSTANT, 1);
                 Operand false_num = newOperand(OP_CONSTANT, 0);
                 genInterCode(IR_ASSIGN, place, false_num);
-                translateCond(node, label1, label2);
+                transCond(node, label1, label2);
                 genInterCode(IR_LABEL, label1);
                 genInterCode(IR_ASSIGN, place, true_num);
             } else {
                 // Exp -> Exp ASSIGNOP Exp
                 if (!strcmp(node->child->sibling->type, "ASSIGNOP")) {
                     Operand t2 = newTemp();
-                    translateExp(node->child->sibling->sibling, t2);
+                    transExp(node->child->sibling->sibling, t2);
                     Operand t1 = newTemp();
-                    translateExp(node->child, t1);
+                    transExp(node->child, t1);
                     genInterCode(IR_ASSIGN, t1, t2);
                 } else {
                     Operand t1 = newTemp();
-                    translateExp(node->child, t1);
+                    transExp(node->child, t1);
                     Operand t2 = newTemp();
-                    translateExp(node->child->sibling->sibling, t2);
+                    transExp(node->child->sibling->sibling, t2);
                     // Exp -> Exp PLUS Exp
                     if (!strcmp(node->child->sibling->type, "PLUS")) {
                         genInterCode(IR_ADD, place, t1, t2);
@@ -960,7 +963,7 @@ void translateExp(Node *node, Operand place) {
             if (!strcmp(node->child->sibling->type, "LB")) {
                 //数组
                 if (node->child->child->sibling &&
-                    !strcmp(node->child->child->sibling, "LB")) {
+                    !strcmp(node->child->child->sibling->type, "LB")) {
                     //多维数组，报错
                     interError = true;
                     printf(
@@ -970,15 +973,15 @@ void translateExp(Node *node, Operand place) {
                     return;
                 } else {
                     Operand idx = newTemp();
-                    translateExp(node->child->sibling->sibling, idx);
+                    transExp(node->child->sibling->sibling, idx);
                     Operand base = newTemp();
-                    translateExp(node->child, base);
+                    transExp(node->child, base);
 
                     Operand width;
                     Operand offset = newTemp();
                     Operand target;
                     // 根据假设，Exp1只会展开为 Exp DOT ID 或 ID
-                    // 我们让前一种情况吧ID作为name回填进place返回到这里的base处，在语义分析时将结构体变量也填进表（因为假设无重名），这样两种情况都可以查表得到。
+                    // 我们让前一种情况把ID作为name回填进place返回到这里的base处，在语义分析时将结构体变量也填进表（因为假设无重名），这样两种情况都可以查表得到。
                     TableItem item = searchTableItem(base->u.name);
                     assert(item->fieldList->type->kind == ARRAY);
                     width = newOperand(
@@ -1003,7 +1006,7 @@ void translateExp(Node *node, Operand place) {
             else {
                 //结构体
                 Operand temp = newTemp();
-                translateExp(node->child, temp);
+                transExp(node->child, temp);
                 // 两种情况，Exp直接为一个变量，则需要先取址，若Exp为数组或者多层结构体访问或结构体形参，则target会被填成地址，可以直接用。
                 Operand target;
 
@@ -1054,7 +1057,7 @@ void translateExp(Node *node, Operand place) {
     // Exp -> MINUS Exp
     else if (!strcmp(node->child->type, "MINUS")) {
         Operand t1 = newTemp();
-        translateExp(node->child->sibling, t1);
+        transExp(node->child->sibling, t1);
         Operand zero = newOperand(OP_CONSTANT, 0);
         genInterCode(IR_SUB, place, zero, t1);
     }
@@ -1065,7 +1068,7 @@ void translateExp(Node *node, Operand place) {
     //     Operand true_num = newOperand(OP_CONSTANT, 1);
     //     Operand false_num = newOperand(OP_CONSTANT, 0);
     //     genInterCode(IR_ASSIGN, place, false_num);
-    //     translateCond(node, label1, label2);
+    //     transCond(node, label1, label2);
     //     genInterCode(IR_LABEL, label1);
     //     genInterCode(IR_ASSIGN, place, true_num);
     // }
@@ -1077,7 +1080,7 @@ void translateExp(Node *node, Operand place) {
         // Exp -> ID LP Args RP
         if (!strcmp(node->child->sibling->sibling->type, "Args")) {
             ArgList argList = newArgList();
-            translateArgs(node->child->sibling->sibling, argList);
+            transArgs(node->child->sibling->sibling, argList);
             if (!strcmp(node->child->val, "write")) {
                 genInterCode(IR_WRITE, argList->head->op);
             } else {
@@ -1157,7 +1160,7 @@ void translateExp(Node *node, Operand place) {
     }
 }
 
-void translateCond(Node *node, Operand labelTrue, Operand labelFalse) {
+void transCond(Node *node, Operand labelTrue, Operand labelFalse) {
     assert(node != NULL);
     if (interError) return;
     // Exp -> Exp AND Exp
@@ -1167,14 +1170,14 @@ void translateCond(Node *node, Operand labelTrue, Operand labelFalse) {
 
     // Exp -> NOT Exp
     if (!strcmp(node->child->type, "NOT")) {
-        translateCond(node->child->sibling, labelFalse, labelTrue);
+        transCond(node->child->sibling, labelFalse, labelTrue);
     }
     // Exp -> Exp RELOP Exp
     else if (!strcmp(node->child->sibling->type, "RELOP")) {
         Operand t1 = newTemp();
         Operand t2 = newTemp();
-        translateExp(node->child, t1);
-        translateExp(node->child->sibling->sibling, t2);
+        transExp(node->child, t1);
+        transExp(node->child->sibling->sibling, t2);
 
         Operand relop =
             newOperand(OP_RELOP, newString(node->child->sibling->val));
@@ -1196,21 +1199,21 @@ void translateCond(Node *node, Operand labelTrue, Operand labelFalse) {
     // Exp -> Exp AND Exp
     else if (!strcmp(node->child->sibling->type, "AND")) {
         Operand label1 = newLabel();
-        translateCond(node->child, label1, labelFalse);
+        transCond(node->child, label1, labelFalse);
         genInterCode(IR_LABEL, label1);
-        translateCond(node->child->sibling->sibling, labelTrue, labelFalse);
+        transCond(node->child->sibling->sibling, labelTrue, labelFalse);
     }
     // Exp -> Exp OR Exp
     else if (!strcmp(node->child->sibling->type, "OR")) {
         Operand label1 = newLabel();
-        translateCond(node->child, labelTrue, label1);
+        transCond(node->child, labelTrue, label1);
         genInterCode(IR_LABEL, label1);
-        translateCond(node->child->sibling->sibling, labelTrue, labelFalse);
+        transCond(node->child->sibling->sibling, labelTrue, labelFalse);
     }
     // other cases
     else {
         Operand t1 = newTemp();
-        translateExp(node, t1);
+        transExp(node, t1);
         Operand t2 = newOperand(OP_CONSTANT, 0);
         Operand relop = newOperand(OP_RELOP, newString("!="));
 
@@ -1224,7 +1227,7 @@ void translateCond(Node *node, Operand labelTrue, Operand labelFalse) {
     }
 }
 
-void translateArgs(Node *node, ArgList argList) {
+void transArgs(Node *node, ArgList argList) {
     assert(node != NULL);
     assert(argList != NULL);
     if (interError) return;
@@ -1233,7 +1236,7 @@ void translateArgs(Node *node, ArgList argList) {
 
     // Args -> Exp
     Arg temp = newArg(newTemp());
-    translateExp(node->child, temp->op);
+    transExp(node->child, temp->op);
 
     if (temp->op->kind == OP_VARIABLE) {
         TableItem item = searchTableItem(temp->op->u.name);
@@ -1250,6 +1253,6 @@ void translateArgs(Node *node, ArgList argList) {
 
     // Args -> Exp COMMA Args
     if (node->child->sibling != NULL) {
-        translateArgs(node->child->sibling->sibling, argList);
+        transArgs(node->child->sibling->sibling, argList);
     }
 }

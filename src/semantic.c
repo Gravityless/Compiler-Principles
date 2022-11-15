@@ -253,6 +253,9 @@ void exitLayer() {
 }
 
 TableItem getLayerHead() {
+    printf("debugger: enter getLayerHead\n");
+    if (scope) printf("scope exist\n");
+    if (scope->scopeLayer) printf("scopeLayer exist\n");
     return scope->scopeLayer[scope->layerDepth];
 }
 
@@ -263,14 +266,30 @@ void setLayerHead(TableItem newVal) {
 // Table functions
 Table initTable() {
     Table table = (Table)malloc(sizeof(struct Table_));
-    table->hashTable = newHashTable();
-    table->scope = newScope();
+    hashTable = newHashTable();
+    scope = newScope();
+    table->hashTable = hashTable;
+    table->scope = scope;
     table->anonymousNum = 0;
+    printf("debugger: createing read & write\n");
+    TableItem read = newItem(
+        0, newFieldList(newString("read"),
+                        newType(FUNCTION, 0, NULL, newType(BASIC, 0))));
+
+    TableItem write = newItem(
+        0, newFieldList(newString("write"),
+                        newType(FUNCTION, 1,
+                                newFieldList("arg1", newType(BASIC, 0)),
+                                newType(BASIC, 0))));
+    printf("debugger: adding read & write\n");
+    addTableItem(read);
+    addTableItem(write);
+    printf("debugger: added read & write\n");
     return table;
 };
 
 void delTable() {
-    delHashTable(hashTable);
+    delHashTable();
     delScope();
     // printf("debuger: free table\n");
     if (table)
@@ -304,11 +323,15 @@ bool hasConfliction(TableItem item) {
 }
 
 void addTableItem(TableItem item) {
+    printf("debugger: get hash code\n");
     unsigned hashCode = getHashCode(item->fieldList->name);
 
+    printf("debugger: get layer head\n");
     item->sameScope = getLayerHead();
+    printf("debugger: add to layer\n");
     setLayerHead(item);
 
+    printf("debugger: add to hashtable\n");
     item->sameHash = getHashHead(hashCode);
     setHashHead(hashCode, item);
 }
@@ -526,7 +549,7 @@ void CompSt(Node* node, Type returnType) {
         StmtList(tmp, returnType);
     }
 
-    exitLayer();
+    // exitLayer();
 }
 
 void StmtList(Node* node, Type returnType) {
@@ -611,7 +634,8 @@ void Dec(Node* node, Type specifier, TableItem structInfo) {
             } else {
                 last->tail = copyFieldList(decItem->fieldList);
             }
-            delItem(decItem);
+            // delItem(decItem);
+            addTableItem(decItem);
         } else {
             TableItem decItem = VarDec(node->child, specifier);
             if (hasConfliction(decItem)) {
@@ -849,5 +873,5 @@ void semanticAnalysis(Node *node)
     hashTable = table->hashTable;
     scope = table->scope;
     tranverseTree(node);
-    delTable(table);
+    // delTable(table);
 }

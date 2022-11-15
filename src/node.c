@@ -77,8 +77,7 @@ void printTreetoFile(Node* node, int space, FILE *fp) {
 }
 
 void generateTree(Node* node) {
-    printf("generate tree.\n");
-    FILE *fp = fopen("./test.txt", "w+");
+    FILE *fp = fopen("./test_tree.txt", "w+");
     printTreetoFile(node, 0, fp);
     fclose(fp);
 }

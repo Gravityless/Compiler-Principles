@@ -1,0 +1,6 @@
+FUNCTION main :
+PARAM a
+PARAM b
+c := #1
+t1 := a + b
+d := t1

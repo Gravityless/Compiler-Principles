@@ -1,5 +1,5 @@
-#ifndef _INTER_H_
-#define _INTER_H_
+#ifndef _INTERCODE_H_
+#define _INTERCODE_H_
 #include "node.h"
 #include "semantic.h"
 
@@ -60,7 +60,7 @@ struct InterCode_ {
 
 struct InterCodes_ {
     InterCode code;
-    struct InterCodes_ *prev, *next;
+    InterCodes prev, next;
 };
 
 struct Arg_ {
@@ -115,21 +115,21 @@ void addInterCode(InterCodeList interCodeList, InterCodes newCode);
 Operand newTemp();
 Operand newLabel();
 int getSize(Type type);
-void genInterCodes(Node node);
+void genInterCodes(Node* node);
 void genInterCode(int kind, ...);
-void transExp(Node node, Operand place);
-void transArgs(Node node, ArgList argList);
-void transCond(Node node, Operand labelTrue, Operand labelFalse);
-void transVarDec(Node node, Operand place);
-void transDec(Node node);
-void transDecList(Node node);
-void transDef(Node node);
-void transDefList(Node node);
-void transCompSt(Node node);
-void transStmt(Node node);
-void transStmtList(Node node);
-void transFunDec(Node node);
-void transExtDef(Node node);
-void transExtDefList(Node node);
+void transExp(Node* node, Operand place);
+void transArgs(Node* node, ArgList argList);
+void transCond(Node* node, Operand labelTrue, Operand labelFalse);
+void transVarDec(Node* node, Operand place);
+void transDec(Node* node);
+void transDecList(Node* node);
+void transDef(Node* node);
+void transDefList(Node* node);
+void transCompSt(Node* node);
+void transStmt(Node* node);
+void transStmtList(Node* node);
+void transFunDec(Node* node);
+void transExtDef(Node* node);
+void transExtDefList(Node* node);
 
 #endif
