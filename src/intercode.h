@@ -22,7 +22,7 @@ struct Operand_ {
 
     union {
         char* name;
-        int value;
+        int val;
     } u;
 };
 
@@ -131,5 +131,6 @@ void transStmtList(Node* node);
 void transFunDec(Node* node);
 void transExtDef(Node* node);
 void transExtDefList(Node* node);
+void intercodeGenerate(Node* node, FILE* fp);
 
 #endif

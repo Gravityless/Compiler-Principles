@@ -68,7 +68,7 @@ void delType(Type type) {
             delType(type->u.array.elem);
             break;
         case STRUCTURE:
-            // printf("debuger: free type-struct-name\n");
+            // printf("debugger: free type-struct-name\n");
             if (type->u.structure.name)
                 free(type->u.structure.name);
             tmp = type->u.structure.fieldList;
@@ -88,7 +88,7 @@ void delType(Type type) {
             }
             break;
     }
-    // printf("debuger: free type\n");
+    // printf("debugger: free type\n");
     if(type)
         free(type);
 }
@@ -140,20 +140,20 @@ FieldList copyFieldList(FieldList src) {
 }
 
 void delFieldList(FieldList fieldList) {
-    // printf("debuger: free fieldList-name\n");
+    // printf("debugger: free fieldList-name\n");
     if (fieldList->name)
         free(fieldList->name);
     
     if (fieldList->type) 
         delType(fieldList->type);
     
-    // printf("debuger: free fieldList\n");
+    // printf("debugger: free fieldList\n");
     if(fieldList)
         free(fieldList);
 }
 
 void setFieldListName(FieldList p, char* newName) {
-    // printf("debuger: free fieldList-name\n");
+    // printf("debugger: free fieldList-name\n");
     if (p->name != NULL) 
         free(p->name);
     p->name = newString(newName);
@@ -172,7 +172,7 @@ TableItem newItem(int layerDepth, FieldList pfield) {
 void delItem(TableItem item) {
     if (item->fieldList != NULL) 
         delFieldList(item->fieldList);
-    // printf("debuger: free tableItem\n");
+    // printf("debugger: free tableItem\n");
     if (item)
         free(item);
 }
@@ -196,10 +196,10 @@ void delHashTable() {
             delItem(del);
         }
     }
-    // printf("debuger: free hash-hashArray\n");
+    // printf("debugger: free hash-hashArray\n");
     if (hashTable->hashArray)
         free(hashTable->hashArray);
-    // printf("debuger: free hashTable\n");
+    // printf("debugger: free hashTable\n");
     if (hashTable)
         free(hashTable);
 }
@@ -224,11 +224,11 @@ Scope newScope() {
 }
 
 void delScope() {
-    // printf("debuger: free scope-scopeLayer\n");
+    // printf("debugger: free scope-scopeLayer\n");
     if (scope->scopeLayer)
         free(scope->scopeLayer);
 
-    // printf("debuger: free scope\n");
+    // printf("debugger: free scope\n");
     if (scope)
         free(scope);
 }
@@ -253,9 +253,6 @@ void exitLayer() {
 }
 
 TableItem getLayerHead() {
-    printf("debugger: enter getLayerHead\n");
-    if (scope) printf("scope exist\n");
-    if (scope->scopeLayer) printf("scopeLayer exist\n");
     return scope->scopeLayer[scope->layerDepth];
 }
 
@@ -271,27 +268,21 @@ Table initTable() {
     table->hashTable = hashTable;
     table->scope = scope;
     table->anonymousNum = 0;
-    printf("debugger: createing read & write\n");
-    TableItem read = newItem(
-        0, newFieldList(newString("read"),
-                        newType(FUNCTION, 0, NULL, newType(BASIC, 0))));
+    TableItem read = newItem(0, newFieldList(newString("read"),
+        newType(FUNCTION, 0, NULL, newType(BASIC, 0))));
 
-    TableItem write = newItem(
-        0, newFieldList(newString("write"),
-                        newType(FUNCTION, 1,
-                                newFieldList("arg1", newType(BASIC, 0)),
-                                newType(BASIC, 0))));
-    printf("debugger: adding read & write\n");
+    TableItem write = newItem(0, newFieldList(newString("write"), 
+        newType(FUNCTION, 1, newFieldList("arg1", newType(BASIC, 0)), newType(BASIC, 0))));
+    
     addTableItem(read);
     addTableItem(write);
-    printf("debugger: added read & write\n");
     return table;
 };
 
 void delTable() {
     delHashTable();
     delScope();
-    // printf("debuger: free table\n");
+    // printf("debugger: free table\n");
     if (table)
         free(table);
 };
@@ -323,15 +314,11 @@ bool hasConfliction(TableItem item) {
 }
 
 void addTableItem(TableItem item) {
-    printf("debugger: get hash code\n");
     unsigned hashCode = getHashCode(item->fieldList->name);
 
-    printf("debugger: get layer head\n");
     item->sameScope = getLayerHead();
-    printf("debugger: add to layer\n");
     setLayerHead(item);
 
-    printf("debugger: add to hashtable\n");
     item->sameHash = getHashHead(hashCode);
     setHashHead(hashCode, item);
 }
@@ -549,7 +536,8 @@ void CompSt(Node* node, Type returnType) {
         StmtList(tmp, returnType);
     }
 
-    // exitLayer();
+    // exitLayer(); 实验三中只记录作用域而不清除记录
+    outerLayer();
 }
 
 void StmtList(Node* node, Type returnType) {

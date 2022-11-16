@@ -10,39 +10,29 @@ extern int yyparse();
 extern Node* root;
 int errornum = 0;
 
-int main(int argc, char** argv) {
-
-    if (argc < 2) {
-        yylex();
-        return 0;
+int main(int argc, char** argv) {    
+    FILE *codeList = fopen(argv[1], "r");
+    FILE *irList = fopen(argv[2], "w+");
+    if (!codeList) {
+        perror(argv[1]);
+        return -1;
     }
-    
-    FILE *fp = fopen("./test_intercode.txt", "w+");
-    for (int i = 1; i < argc; i++) {
-        FILE *f = fopen(argv[i], "r");
-        if (!f) {
-            perror(argv[1]);
-            return -1;
-        }
-        yyrestart(f);
-        // yylex();
-        yyparse();
-        fclose(f);
+    yyrestart(codeList);
+    // yylex();
+    yyparse();
+    fclose(codeList);
 
-        if (errornum == 0) {
-            printf("start generating syntax tree\n");
-            generateTree(root);
+    if (errornum == 0) {
+        // printf("start generating syntax tree\n");
+        generateTree(root);
 
-            printf("start semantic analysis\n");
-            semanticAnalysis(root);
-            
-            printf("start generating intercodes\n");
-            interCodeList = newInterCodeList();
-            genInterCodes(root);
-            if (!interError)
-                printInterCode(fp, interCodeList);
-            delTable(table);
-        }
+        // printf("start semantic analysis\n");
+        semanticAnalysis(root);
+        
+        // printf("start generating intercodes\n");
+        intercodeGenerate(root, irList);
+
+        delTable(table);
     }
     return 0;
 }
