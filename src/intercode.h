@@ -12,12 +12,10 @@ typedef struct InterCodeList_* InterCodeList;
 
 struct Operand_ {
     enum {
-        OP_VARIABLE,
-        OP_CONSTANT,
-        OP_ADDRESS,
-        OP_LABEL,
-        OP_FUNCTION,
-        OP_RELOP,
+        VARIABLE,
+        CONSTANT,
+        ADDRESS,
+        TEXT,
     } kind;
 
     union {
@@ -28,25 +26,25 @@ struct Operand_ {
 
 struct InterCode_ {
     enum {
-        IR_LABEL,
-        IR_FUNCTION,
-        IR_ASSIGN,
-        IR_ADD,
-        IR_SUB,
-        IR_MUL,
-        IR_DIV,
-        IR_GET_ADDR,
-        IR_READ_ADDR,
-        IR_WRITE_ADDR,
-        IR_GOTO,
-        IR_IF_GOTO,
-        IR_RETURN,
-        IR_DEC,
-        IR_ARG,
-        IR_CALL,
-        IR_PARAM,
-        IR_READ,
-        IR_WRITE,
+        LABEL,
+        FUNCTION,
+        ASSIGN,
+        ADD,
+        SUB,
+        MUL,
+        DIV,
+        GET_ADDR,
+        READ_ADDR,
+        WRITE_ADDR,
+        GOTO,
+        IF_GOTO,
+        RETURN,
+        DEC,
+        ARG,
+        CALL,
+        PARAM,
+        READ,
+        WRITE,
     } kind;
 
     union {
@@ -76,7 +74,7 @@ struct ArgList_ {
 struct InterCodeList_ {
     InterCodes head;
     InterCodes cur;
-    char* lastArrayName;
+    char* arrayName;
     int tempVarNum;
     int labelNum;
 };
@@ -88,32 +86,30 @@ extern InterCodeList interCodeList;
 Operand newOperand(int kind, ...);
 void deleteOperand(Operand p);
 void setOperand(Operand p, int kind, char* val);
-void printOp(FILE* fp, Operand op);
-
-// InterCode func
-InterCode newInterCode(int kind, ...);
-void deleteInterCode(InterCode p);
-void printInterCode(FILE* fp, InterCodeList interCodeList);
-
-// InterCodes func
-InterCodes newInterCodes(InterCode code);
-void deleteInterCodes(InterCodes p);
+void printOperand(FILE* fp, Operand op);
 
 // Arg and ArgList func
-Arg newArg(Operand op);
 ArgList newArgList();
-void deleteArg(Arg p);
 void deleteArgList(ArgList p);
+void reverseArgList(ArgList argList);
+Arg newArg(Operand op);
 void addArg(ArgList argList, Arg arg);
+void deleteArg(Arg p);
+
+
+// InterCodes func
+InterCodes newInterCodes();
+void deleteInterCodes(InterCodes p);
+void addInterCode(InterCodes newCode);
 
 // InterCodeList func
 InterCodeList newInterCodeList();
-void deleteInterCodeList(InterCodeList p);
-void addInterCode(InterCodeList interCodeList, InterCodes newCode);
+void deleteInterCodeList();
+void printInterCodeList(FILE* fp);
 
 // traverse func
-Operand newTemp();
-Operand newLabel();
+Operand Temp();
+Operand Label();
 int getSize(Type type);
 void genInterCodes(Node* node);
 void genInterCode(int kind, ...);

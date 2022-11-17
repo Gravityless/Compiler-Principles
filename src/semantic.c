@@ -23,7 +23,7 @@ Type newType(int kind, ...) {
             p->u.structure.name = va_arg(ap, char*);
             p->u.structure.fieldList = va_arg(ap, FieldList);
             break;
-        case FUNCTION:
+        case FUNC:
             p->u.function.argc = va_arg(ap, int);
             p->u.function.argv = va_arg(ap, FieldList);
             p->u.function.rType = va_arg(ap, Type);
@@ -49,7 +49,7 @@ Type copyType(Type src) {
             p->u.structure.name = newString(src->u.structure.name);
             p->u.structure.fieldList = copyFieldList(src->u.structure.fieldList);
             break;
-        case FUNCTION:
+        case FUNC:
             p->u.function.argc = src->u.function.argc;
             p->u.function.argv = copyFieldList(src->u.function.argv);
             p->u.function.rType = copyType(src->u.function.rType);
@@ -78,7 +78,7 @@ void delType(Type type) {
                 delFieldList(del);
             }
             break;
-        case FUNCTION:
+        case FUNC:
             delType(type->u.function.rType);
             tmp = type->u.function.argv;
             while (tmp) {
@@ -96,7 +96,7 @@ void delType(Type type) {
 bool compareType(Type t1, Type t2) {
     if (t1 == NULL && t2 == NULL) return true;
     if ((t1 != NULL && t2 == NULL) || (t1 == NULL && t2 != NULL)) return false;
-    if (t1->kind == FUNCTION || t2->kind == FUNCTION) return false;
+    if (t1->kind == FUNC || t2->kind == FUNC) return false;
     if (t1->kind != t2->kind)
         return false;
     else {
@@ -269,10 +269,10 @@ Table initTable() {
     table->scope = scope;
     table->anonymousNum = 0;
     TableItem read = newItem(0, newFieldList(newString("read"),
-        newType(FUNCTION, 0, NULL, newType(BASIC, 0))));
+        newType(FUNC, 0, NULL, newType(BASIC, 0))));
 
     TableItem write = newItem(0, newFieldList(newString("write"), 
-        newType(FUNCTION, 1, newFieldList("arg1", newType(BASIC, 0)), newType(BASIC, 0))));
+        newType(FUNC, 1, newFieldList("arg1", newType(BASIC, 0)), newType(BASIC, 0))));
     
     addTableItem(read);
     addTableItem(write);
@@ -465,7 +465,7 @@ TableItem VarDec(Node* node, Type specifier) {
 
 void FunDec(Node* node, Type returnType) {
     TableItem p = newItem(scope->layerDepth, newFieldList(node->child->val,
-        newType(FUNCTION, 0, NULL, copyType(returnType))));
+        newType(FUNC, 0, NULL, copyType(returnType))));
 
     if (!strcmp(node->child->sibling->sibling->type, "VarList")) {
         VarList(node->child->sibling->sibling, p);
@@ -764,7 +764,7 @@ Type Exp(Node* node) {
             sprintf(msg, "Undefined function \"%s\".", t->val);
             Error(FUN_UNDEF, node->lineno, msg);
             return NULL;
-        } else if (funInfo->fieldList->type->kind != FUNCTION) {
+        } else if (funInfo->fieldList->type->kind != FUNC) {
             char msg[MAX_MSG_LENGTH] = {0};
             sprintf(msg, "\"%s\" is not a function.", t->val);
             Error(NOT_FUN, node->lineno, msg);

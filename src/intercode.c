@@ -10,7 +10,7 @@ Operand newOperand(int kind, ...) {
     va_list ap;
     va_start(ap, kind);
     switch (kind) {
-        case OP_CONSTANT:
+        case CONSTANT:
             p->u.val = va_arg(ap, int);
             break;
         default:
@@ -23,7 +23,7 @@ Operand newOperand(int kind, ...) {
 void setOperand(Operand p, int kind, char* val) {
     p->kind = kind;
     switch (kind) {
-        case OP_CONSTANT:
+        case CONSTANT:
             p->u.val = atoi(val);
             break;
         default:
@@ -36,7 +36,7 @@ void setOperand(Operand p, int kind, char* val) {
 void deleteOperand(Operand p) {
     if (p == NULL) return;
     switch (p->kind) {
-        case OP_CONSTANT:
+        case CONSTANT:
             break;
         default:
             if (p->u.name) free(p->u.name);
@@ -45,230 +45,15 @@ void deleteOperand(Operand p) {
     free(p);
 }
 
-void printOp(FILE* fp, Operand op) {
+void printOperand(FILE* fp, Operand op) {
     switch (op->kind) {
-        case OP_CONSTANT:
+        case CONSTANT:
             fprintf(fp, "#%d", op->u.val);
             break;
         default:
             fprintf(fp, "%s", op->u.name);
             break;
     }
-}
-
-// InterCode func
-InterCode newInterCode(int kind, ...) {
-    InterCode p = (InterCode)malloc(sizeof(struct InterCode_));
-    p->kind = kind;
-    va_list ap;
-    switch (kind) {
-        case IR_LABEL:
-        case IR_FUNCTION:
-        case IR_GOTO:
-        case IR_RETURN:
-        case IR_ARG:
-        case IR_PARAM:
-        case IR_READ:
-        case IR_WRITE:
-            va_start(ap, kind);
-            p->u.sinOp.op = va_arg(ap, Operand);
-            break;
-        case IR_ASSIGN:
-        case IR_GET_ADDR:
-        case IR_READ_ADDR:
-        case IR_WRITE_ADDR:
-        case IR_CALL:
-            va_start(ap, kind);
-            p->u.assign.left = va_arg(ap, Operand);
-            p->u.assign.right = va_arg(ap, Operand);
-            break;
-        case IR_ADD:
-        case IR_SUB:
-        case IR_MUL:
-        case IR_DIV:
-            va_start(ap, kind);
-            p->u.binOp.result = va_arg(ap, Operand);
-            p->u.binOp.op1 = va_arg(ap, Operand);
-            p->u.binOp.op2 = va_arg(ap, Operand);
-            break;
-        case IR_DEC:
-            va_start(ap, kind);
-            p->u.dec.op = va_arg(ap, Operand);
-            p->u.dec.size = va_arg(ap, int);
-            break;
-        case IR_IF_GOTO:
-            va_start(ap, kind);
-            p->u.ifGoto.x = va_arg(ap, Operand);
-            p->u.ifGoto.relop = va_arg(ap, Operand);
-            p->u.ifGoto.y = va_arg(ap, Operand);
-            p->u.ifGoto.z = va_arg(ap, Operand);
-    }
-    return p;
-}
-
-void deleteInterCode(InterCode p) {
-    switch (p->kind) {
-        case IR_LABEL:
-        case IR_FUNCTION:
-        case IR_GOTO:
-        case IR_RETURN:
-        case IR_ARG:
-        case IR_PARAM:
-        case IR_READ:
-        case IR_WRITE:
-            deleteOperand(p->u.sinOp.op);
-            break;
-        case IR_ASSIGN:
-        case IR_GET_ADDR:
-        case IR_READ_ADDR:
-        case IR_WRITE_ADDR:
-        case IR_CALL:
-            deleteOperand(p->u.assign.left);
-            deleteOperand(p->u.assign.right);
-            break;
-        case IR_ADD:
-        case IR_SUB:
-        case IR_MUL:
-        case IR_DIV:
-            deleteOperand(p->u.binOp.result);
-            deleteOperand(p->u.binOp.op1);
-            deleteOperand(p->u.binOp.op2);
-            break;
-        case IR_DEC:
-            deleteOperand(p->u.dec.op);
-            break;
-        case IR_IF_GOTO:
-            deleteOperand(p->u.ifGoto.x);
-            deleteOperand(p->u.ifGoto.relop);
-            deleteOperand(p->u.ifGoto.y);
-            deleteOperand(p->u.ifGoto.z);
-    }
-    free(p);
-}
-
-void printInterCode(FILE* fp, InterCodeList interCodeList) {
-    for (InterCodes cur = interCodeList->head; cur != NULL; cur = cur->next) {
-        switch (cur->code->kind) {
-            case IR_LABEL:
-                fprintf(fp, "LABEL ");
-                printOp(fp, cur->code->u.sinOp.op);
-                fprintf(fp, " :");
-                break;
-            case IR_FUNCTION:
-                fprintf(fp, "FUNCTION ");
-                printOp(fp, cur->code->u.sinOp.op);
-                fprintf(fp, " :");
-                break;
-            case IR_ASSIGN:
-                printOp(fp, cur->code->u.assign.left);
-                fprintf(fp, " := ");
-                printOp(fp, cur->code->u.assign.right);
-                break;
-            case IR_ADD:
-                printOp(fp, cur->code->u.binOp.result);
-                fprintf(fp, " := ");
-                printOp(fp, cur->code->u.binOp.op1);
-                fprintf(fp, " + ");
-                printOp(fp, cur->code->u.binOp.op2);
-                break;
-            case IR_SUB:
-                printOp(fp, cur->code->u.binOp.result);
-                fprintf(fp, " := ");
-                printOp(fp, cur->code->u.binOp.op1);
-                fprintf(fp, " - ");
-                printOp(fp, cur->code->u.binOp.op2);
-                break;
-            case IR_MUL:
-                printOp(fp, cur->code->u.binOp.result);
-                fprintf(fp, " := ");
-                printOp(fp, cur->code->u.binOp.op1);
-                fprintf(fp, " * ");
-                printOp(fp, cur->code->u.binOp.op2);
-                break;
-            case IR_DIV:
-                printOp(fp, cur->code->u.binOp.result);
-                fprintf(fp, " := ");
-                printOp(fp, cur->code->u.binOp.op1);
-                fprintf(fp, " / ");
-                printOp(fp, cur->code->u.binOp.op2);
-                break;
-            case IR_GET_ADDR:
-                printOp(fp, cur->code->u.assign.left);
-                fprintf(fp, " := &");
-                printOp(fp, cur->code->u.assign.right);
-                break;
-            case IR_READ_ADDR:
-                printOp(fp, cur->code->u.assign.left);
-                fprintf(fp, " := *");
-                printOp(fp, cur->code->u.assign.right);
-                break;
-            case IR_WRITE_ADDR:
-                fprintf(fp, "*");
-                printOp(fp, cur->code->u.assign.left);
-                fprintf(fp, " := ");
-                printOp(fp, cur->code->u.assign.right);
-                break;
-            case IR_GOTO:
-                fprintf(fp, "GOTO ");
-                printOp(fp, cur->code->u.sinOp.op);
-                break;
-            case IR_IF_GOTO:
-                fprintf(fp, "IF ");
-                printOp(fp, cur->code->u.ifGoto.x);
-                fprintf(fp, " ");
-                printOp(fp, cur->code->u.ifGoto.relop);
-                fprintf(fp, " ");
-                printOp(fp, cur->code->u.ifGoto.y);
-                fprintf(fp, " GOTO ");
-                printOp(fp, cur->code->u.ifGoto.z);
-                break;
-            case IR_RETURN:
-                fprintf(fp, "RETURN ");
-                printOp(fp, cur->code->u.sinOp.op);
-                break;
-            case IR_DEC:
-                fprintf(fp, "DEC ");
-                printOp(fp, cur->code->u.dec.op);
-                fprintf(fp, " ");
-                fprintf(fp, "%d", cur->code->u.dec.size);
-                break;
-            case IR_ARG:
-                fprintf(fp, "ARG ");
-                printOp(fp, cur->code->u.sinOp.op);
-                break;
-            case IR_CALL:
-                printOp(fp, cur->code->u.assign.left);
-                fprintf(fp, " := CALL ");
-                printOp(fp, cur->code->u.assign.right);
-                break;
-            case IR_PARAM:
-                fprintf(fp, "PARAM ");
-                printOp(fp, cur->code->u.sinOp.op);
-                break;
-            case IR_READ:
-                fprintf(fp, "READ ");
-                printOp(fp, cur->code->u.sinOp.op);
-                break;
-            case IR_WRITE:
-                fprintf(fp, "WRITE ");
-                printOp(fp, cur->code->u.sinOp.op);
-                break;
-        }
-        fprintf(fp, "\n");
-    }
-}
-
-// InterCodes func
-InterCodes newInterCodes(InterCode code) {
-    InterCodes p = (InterCodes)malloc(sizeof(struct InterCodes_));
-    p->code = code;
-    p->prev = NULL;
-    p->next = NULL;
-}
-
-void deleteInterCodes(InterCodes p) {
-    deleteInterCode(p->code);
-    free(p);
 }
 
 // Arg and ArgList func
@@ -309,27 +94,58 @@ void addArg(ArgList argList, Arg arg) {
     }
 }
 
-// InterCodeList func
-InterCodeList newInterCodeList() {
-    InterCodeList p = (InterCodeList)malloc(sizeof(struct InterCodeList_));
-    p->head = NULL;
-    p->cur = NULL;
-    p->lastArrayName = NULL;
-    p->tempVarNum = 1;
-    p->labelNum = 1;
+
+// InterCodes func
+InterCodes newInterCodes() {
+    InterCodes p = (InterCodes)malloc(sizeof(struct InterCodes_));
+    p->code = (InterCode)malloc(sizeof(struct InterCode_));
+    p->prev = NULL;
+    p->next = NULL;
 }
 
-void deleteInterCodeList(InterCodeList p) {
-    InterCodes q = p->head;
-    while (q) {
-        InterCodes temp = q;
-        q = q->next;
-        deleteInterCodes(temp);
+void deleteInterCodes(InterCodes p) {
+    InterCode code = p->code;
+    switch (code->kind) {
+        case LABEL:
+        case FUNCTION:
+        case GOTO:
+        case RETURN:
+        case ARG:
+        case PARAM:
+        case READ:
+        case WRITE:
+            deleteOperand(code->u.sinOp.op);
+            break;
+        case ASSIGN:
+        case GET_ADDR:
+        case READ_ADDR:
+        case WRITE_ADDR:
+        case CALL:
+            deleteOperand(code->u.assign.left);
+            deleteOperand(code->u.assign.right);
+            break;
+        case ADD:
+        case SUB:
+        case MUL:
+        case DIV:
+            deleteOperand(code->u.binOp.result);
+            deleteOperand(code->u.binOp.op1);
+            deleteOperand(code->u.binOp.op2);
+            break;
+        case DEC:
+            deleteOperand(code->u.dec.op);
+            break;
+        case IF_GOTO:
+            deleteOperand(code->u.ifGoto.x);
+            deleteOperand(code->u.ifGoto.relop);
+            deleteOperand(code->u.ifGoto.y);
+            deleteOperand(code->u.ifGoto.z);
     }
+    free(code);
     free(p);
 }
 
-void addInterCode(InterCodeList interCodeList, InterCodes newCode) {
+void addInterCode(InterCodes newCode) {
     if (interCodeList->head == NULL) {
         interCodeList->head = newCode;
         interCodeList->cur = newCode;
@@ -340,20 +156,154 @@ void addInterCode(InterCodeList interCodeList, InterCodes newCode) {
     }
 }
 
+// InterCodeList func
+InterCodeList newInterCodeList() {
+    InterCodeList p = (InterCodeList)malloc(sizeof(struct InterCodeList_));
+    p->head = NULL;
+    p->cur = NULL;
+    p->arrayName = NULL;
+    p->tempVarNum = 1;
+    p->labelNum = 1;
+}
+
+void deleteInterCodeList() {
+    InterCodes q = interCodeList->head;
+    while (q) {
+        InterCodes temp = q;
+        q = q->next;
+        deleteInterCodes(temp);
+    }
+    free(interCodeList);
+}
+
+void printInterCodeList(FILE* fp) {
+    InterCode code = NULL;
+    for (InterCodes cur = interCodeList->head; cur != NULL; cur = cur->next) {
+        code = cur->code;
+        switch (code->kind) {
+            case LABEL:
+                fprintf(fp, "LABEL ");
+                printOperand(fp, code->u.sinOp.op);
+                fprintf(fp, " :");
+                break;
+            case FUNCTION:
+                fprintf(fp, "FUNCTION ");
+                printOperand(fp, code->u.sinOp.op);
+                fprintf(fp, " :");
+                break;
+            case ASSIGN:
+                printOperand(fp, code->u.assign.left);
+                fprintf(fp, " := ");
+                printOperand(fp, code->u.assign.right);
+                break;
+            case ADD:
+                printOperand(fp, code->u.binOp.result);
+                fprintf(fp, " := ");
+                printOperand(fp, code->u.binOp.op1);
+                fprintf(fp, " + ");
+                printOperand(fp, code->u.binOp.op2);
+                break;
+            case SUB:
+                printOperand(fp, code->u.binOp.result);
+                fprintf(fp, " := ");
+                printOperand(fp, code->u.binOp.op1);
+                fprintf(fp, " - ");
+                printOperand(fp, code->u.binOp.op2);
+                break;
+            case MUL:
+                printOperand(fp, code->u.binOp.result);
+                fprintf(fp, " := ");
+                printOperand(fp, code->u.binOp.op1);
+                fprintf(fp, " * ");
+                printOperand(fp, code->u.binOp.op2);
+                break;
+            case DIV:
+                printOperand(fp, code->u.binOp.result);
+                fprintf(fp, " := ");
+                printOperand(fp, code->u.binOp.op1);
+                fprintf(fp, " / ");
+                printOperand(fp, code->u.binOp.op2);
+                break;
+            case GET_ADDR:
+                printOperand(fp, code->u.assign.left);
+                fprintf(fp, " := &");
+                printOperand(fp, code->u.assign.right);
+                break;
+            case READ_ADDR:
+                printOperand(fp, code->u.assign.left);
+                fprintf(fp, " := *");
+                printOperand(fp, code->u.assign.right);
+                break;
+            case WRITE_ADDR:
+                fprintf(fp, "*");
+                printOperand(fp, code->u.assign.left);
+                fprintf(fp, " := ");
+                printOperand(fp, code->u.assign.right);
+                break;
+            case GOTO:
+                fprintf(fp, "GOTO ");
+                printOperand(fp, code->u.sinOp.op);
+                break;
+            case IF_GOTO:
+                fprintf(fp, "IF ");
+                printOperand(fp, code->u.ifGoto.x);
+                fprintf(fp, " ");
+                printOperand(fp, code->u.ifGoto.relop);
+                fprintf(fp, " ");
+                printOperand(fp, code->u.ifGoto.y);
+                fprintf(fp, " GOTO ");
+                printOperand(fp, code->u.ifGoto.z);
+                break;
+            case RETURN:
+                fprintf(fp, "RETURN ");
+                printOperand(fp, code->u.sinOp.op);
+                break;
+            case DEC:
+                fprintf(fp, "DEC ");
+                printOperand(fp, code->u.dec.op);
+                fprintf(fp, " ");
+                fprintf(fp, "%d", code->u.dec.size);
+                break;
+            case ARG:
+                fprintf(fp, "ARG ");
+                printOperand(fp, code->u.sinOp.op);
+                break;
+            case CALL:
+                printOperand(fp, code->u.assign.left);
+                fprintf(fp, " := CALL ");
+                printOperand(fp, code->u.assign.right);
+                break;
+            case PARAM:
+                fprintf(fp, "PARAM ");
+                printOperand(fp, code->u.sinOp.op);
+                break;
+            case READ:
+                fprintf(fp, "READ ");
+                printOperand(fp, code->u.sinOp.op);
+                break;
+            case WRITE:
+                fprintf(fp, "WRITE ");
+                printOperand(fp, code->u.sinOp.op);
+                break;
+        }
+        fprintf(fp, "\n");
+    }
+}
+
 // traverse func
-Operand newTemp() {
+Operand Temp() {
     char tName[10] = {0};
     sprintf(tName, "t%d", interCodeList->tempVarNum);
     interCodeList->tempVarNum++;
-    Operand temp = newOperand(OP_VARIABLE, newString(tName));
+    Operand temp = newOperand(VARIABLE, newString(tName));
     return temp;
 }
 
-Operand newLabel() {
+Operand Label() {
     char lName[10] = {0};
     sprintf(lName, "label%d", interCodeList->labelNum);
     interCodeList->labelNum++;
-    Operand temp = newOperand(OP_LABEL, newString(lName));
+    Operand temp = newOperand(TEXT, newString(lName));
     return temp;
 }
 
@@ -387,94 +337,93 @@ void genInterCodes(Node *node) {
 }
 
 void genInterCode(int kind, ...) {
-    va_list ap;
     Operand temp = NULL;
     Operand result = NULL, op1 = NULL, op2 = NULL, relop = NULL;
     int size = 0;
-    InterCodes newCode = NULL;
+    InterCodes interCodes = newInterCodes();
+    InterCode newCode = interCodes->code;
+    va_list ap;
+    va_start(ap, kind);
+    interCodes->code->kind = kind;
     switch (kind) {
-        case IR_LABEL:
-        case IR_FUNCTION:
-        case IR_GOTO:
-        case IR_RETURN:
-        case IR_ARG:
-        case IR_PARAM:
-        case IR_READ:
-        case IR_WRITE:
-            va_start(ap, kind);
+        case LABEL:
+        case FUNCTION:
+        case GOTO:
+        case RETURN:
+        case ARG:
+        case PARAM:
+        case READ:
+        case WRITE:
             op1 = va_arg(ap, Operand);
-            if (op1->kind == OP_ADDRESS) {
-                temp = newTemp();
-                genInterCode(IR_READ_ADDR, temp, op1);
+            if (op1->kind == ADDRESS) {
+                temp = Temp();
+                genInterCode(READ_ADDR, temp, op1);
                 op1 = temp;
             }
-            newCode = newInterCodes(newInterCode(kind, op1));
-            addInterCode(interCodeList, newCode);
+            newCode->u.sinOp.op = op1;
+            addInterCode(interCodes);
             break;
-        case IR_ASSIGN:
-        case IR_GET_ADDR:
-        case IR_READ_ADDR:
-        case IR_WRITE_ADDR:
-        case IR_CALL:
-            va_start(ap, kind);
+        case ASSIGN:
+        case GET_ADDR:
+        case READ_ADDR:
+        case WRITE_ADDR:
+        case CALL:
             op1 = va_arg(ap, Operand);
             op2 = va_arg(ap, Operand);
-            if (kind == IR_ASSIGN &&
-                (op1->kind == OP_ADDRESS || op2->kind == OP_ADDRESS)) {
-                if (op1->kind == OP_ADDRESS && op2->kind != OP_ADDRESS)
-                    genInterCode(IR_WRITE_ADDR, op1, op2);
-                else if (op2->kind == OP_ADDRESS && op1->kind != OP_ADDRESS)
-                    genInterCode(IR_READ_ADDR, op1, op2);
+            if (kind == ASSIGN &&
+                (op1->kind == ADDRESS || op2->kind == ADDRESS)) {
+                if (op1->kind == ADDRESS && op2->kind != ADDRESS)
+                    genInterCode(WRITE_ADDR, op1, op2);
+                else if (op2->kind == ADDRESS && op1->kind != ADDRESS)
+                    genInterCode(READ_ADDR, op1, op2);
                 else {
-                    temp = newTemp();
-                    genInterCode(IR_READ_ADDR, temp, op2);
-                    genInterCode(IR_WRITE_ADDR, op1, temp);
+                    temp = Temp();
+                    genInterCode(READ_ADDR, temp, op2);
+                    genInterCode(WRITE_ADDR, op1, temp);
                 }
             } else {
-                newCode = newInterCodes(newInterCode(kind, op1, op2));
-                addInterCode(interCodeList, newCode);
+                newCode->u.assign.left = op1;
+                newCode->u.assign.right = op2;
+                addInterCode(interCodes);
             }
             break;
-        case IR_ADD:
-        case IR_SUB:
-        case IR_MUL:
-        case IR_DIV:
-            va_start(ap, kind);
+        case ADD:
+        case SUB:
+        case MUL:
+        case DIV:
             result = va_arg(ap, Operand);
             op1 = va_arg(ap, Operand);
             op2 = va_arg(ap, Operand);
-            if (op1->kind == OP_ADDRESS) {
-                temp = newTemp();
-                genInterCode(IR_READ_ADDR, temp, op1);
+            if (op1->kind == ADDRESS) {
+                temp = Temp();
+                genInterCode(READ_ADDR, temp, op1);
                 op1 = temp;
             }
-            if (op2->kind == OP_ADDRESS) {
-                temp = newTemp();
-                genInterCode(IR_READ_ADDR, temp, op2);
+            if (op2->kind == ADDRESS) {
+                temp = Temp();
+                genInterCode(READ_ADDR, temp, op2);
                 op2 = temp;
             }
-            newCode = newInterCodes(newInterCode(kind, result, op1, op2));
-            addInterCode(interCodeList, newCode);
+            newCode->u.binOp.result = result;
+            newCode->u.binOp.op1 = op1;
+            newCode->u.binOp.op2 = op2;            
+            addInterCode(interCodes);
             break;
-        case IR_DEC:
-            va_start(ap, kind);
-            op1 = va_arg(ap, Operand);
-            size = va_arg(ap, int);
-            newCode = newInterCodes(newInterCode(kind, op1, size));
-            addInterCode(interCodeList, newCode);
+        case DEC:
+            newCode->u.dec.op = va_arg(ap, Operand);
+            newCode->u.dec.size = va_arg(ap, int);
+            addInterCode(interCodes);
             break;
-        case IR_IF_GOTO:
-            va_start(ap, kind);
-            result = va_arg(ap, Operand);
-            relop = va_arg(ap, Operand);
-            op1 = va_arg(ap, Operand);
-            op2 = va_arg(ap, Operand);
-            newCode =
-                newInterCodes(newInterCode(kind, result, relop, op1, op2));
-            addInterCode(interCodeList, newCode);
+        case IF_GOTO:
+            newCode->u.ifGoto.x = va_arg(ap, Operand);
+            newCode->u.ifGoto.relop = va_arg(ap, Operand);
+            newCode->u.ifGoto.y = va_arg(ap, Operand);
+            newCode->u.ifGoto.z = va_arg(ap, Operand);
+            addInterCode(interCodes);
             break;
     }
 }
+
 void transExtDefList(Node *node) {
     while (node) {
         transExtDef(node->child);
@@ -492,13 +441,12 @@ void transExtDef(Node *node) {
 
 void transFunDec(Node *node) {
     if (interError) return;
-    genInterCode(IR_FUNCTION,
-                 newOperand(OP_FUNCTION, newString(node->child->val)));
+    genInterCode(FUNCTION, newOperand(TEXT, newString(node->child->val)));
 
     TableItem funcItem = searchTableItem(node->child->val);
     FieldList temp = funcItem->fieldList->type->u.function.argv;
     while (temp) {
-        genInterCode(IR_PARAM, newOperand(OP_VARIABLE, newString(temp->name)));
+        genInterCode(PARAM, newOperand(VARIABLE, newString(temp->name)));
         temp = temp->tail;
     }
 }
@@ -545,11 +493,11 @@ void transDec(Node *node) {
     if (node->child->sibling == NULL) {
         transVarDec(node->child, NULL);
     } else {
-        Operand t1 = newTemp();
+        Operand t1 = Temp();
         transVarDec(node->child, t1);
-        Operand t2 = newTemp();
+        Operand t2 = Temp();
         transExp(node->child->sibling->sibling, t2);
-        genInterCode(IR_ASSIGN, t1, t2);
+        genInterCode(ASSIGN, t1, t2);
     }
 }
 
@@ -561,8 +509,7 @@ void transVarDec(Node *node, Operand place) {
         if (type->kind == BASIC) {
             if (place) {
                 interCodeList->tempVarNum--;
-                setOperand(place, OP_VARIABLE,
-                           newString(temp->fieldList->name));
+                setOperand(place, VARIABLE, newString(temp->fieldList->name));
             }
         } else if (type->kind == ARRAY) {
             if (type->u.array.elem->kind == ARRAY) {
@@ -570,14 +517,11 @@ void transVarDec(Node *node, Operand place) {
                 printf("Cannot translate multi-dimensional array type or parameters of array type.\n");
                 return;
             } else {
-                genInterCode(
-                    IR_DEC,
-                    newOperand(OP_VARIABLE, newString(temp->fieldList->name)),
+                genInterCode(DEC, newOperand(VARIABLE, newString(temp->fieldList->name)),
                     getSize(type));
             }
         } else if (type->kind == STRUCTURE) {
-            genInterCode(IR_DEC,
-                         newOperand(OP_VARIABLE, newString(temp->fieldList->name)),
+            genInterCode(DEC, newOperand(VARIABLE, newString(temp->fieldList->name)),
                          getSize(type));
         }
     } else {
@@ -600,39 +544,39 @@ void transStmt(Node *node) {
     } else if (!strcmp(node->child->type, "CompSt")) {
         transCompSt(node->child);
     } else if (!strcmp(node->child->type, "RETURN")) {
-        Operand t1 = newTemp();
+        Operand t1 = Temp();
         transExp(node->child->sibling, t1);
-        genInterCode(IR_RETURN, t1);
+        genInterCode(RETURN, t1);
     } else if (!strcmp(node->child->type, "IF")) {
         Node *exp = node->child->sibling->sibling;
         Node *stmt = exp->sibling->sibling;
-        Operand label1 = newLabel();
-        Operand label2 = newLabel();
+        Operand label1 = Label();
+        Operand label2 = Label();
 
         transCond(exp, label1, label2);
-        genInterCode(IR_LABEL, label1);
+        genInterCode(LABEL, label1);
         transStmt(stmt);
         if (stmt->sibling == NULL) {
-            genInterCode(IR_LABEL, label2);
+            genInterCode(LABEL, label2);
         } else {
-            Operand label3 = newLabel();
-            genInterCode(IR_GOTO, label3);
-            genInterCode(IR_LABEL, label2);
+            Operand label3 = Label();
+            genInterCode(GOTO, label3);
+            genInterCode(LABEL, label2);
             transStmt(stmt->sibling->sibling);
-            genInterCode(IR_LABEL, label3);
+            genInterCode(LABEL, label3);
         }
 
     } else if (!strcmp(node->child->type, "WHILE")) {
-        Operand label1 = newLabel();
-        Operand label2 = newLabel();
-        Operand label3 = newLabel();
+        Operand label1 = Label();
+        Operand label2 = Label();
+        Operand label3 = Label();
 
-        genInterCode(IR_LABEL, label1);
+        genInterCode(LABEL, label1);
         transCond(node->child->sibling->sibling, label2, label3);
-        genInterCode(IR_LABEL, label2);
+        genInterCode(LABEL, label2);
         transStmt(node->child->sibling->sibling->sibling->sibling);
-        genInterCode(IR_GOTO, label1);
-        genInterCode(IR_LABEL, label3);
+        genInterCode(GOTO, label1);
+        genInterCode(LABEL, label3);
     }
 }
 
@@ -647,34 +591,34 @@ void transExp(Node *node, Operand place) {
                 !strcmp(node->child->sibling->type, "OR") ||
                 !strcmp(node->child->sibling->type, "RELOP") ||
                 !strcmp(node->child->type, "NOT")) {
-                Operand label1 = newLabel();
-                Operand label2 = newLabel();
-                Operand true_num = newOperand(OP_CONSTANT, 1);
-                Operand false_num = newOperand(OP_CONSTANT, 0);
-                genInterCode(IR_ASSIGN, place, false_num);
+                Operand label1 = Label();
+                Operand label2 = Label();
+                Operand true_num = newOperand(CONSTANT, 1);
+                Operand false_num = newOperand(CONSTANT, 0);
+                genInterCode(ASSIGN, place, false_num);
                 transCond(node, label1, label2);
-                genInterCode(IR_LABEL, label1);
-                genInterCode(IR_ASSIGN, place, true_num);
+                genInterCode(LABEL, label1);
+                genInterCode(ASSIGN, place, true_num);
             } else {
                 if (!strcmp(node->child->sibling->type, "ASSIGNOP")) {
-                    Operand t2 = newTemp();
+                    Operand t2 = Temp();
                     transExp(node->child->sibling->sibling, t2);
-                    Operand t1 = newTemp();
+                    Operand t1 = Temp();
                     transExp(node->child, t1);
-                    genInterCode(IR_ASSIGN, t1, t2);
+                    genInterCode(ASSIGN, t1, t2);
                 } else {
-                    Operand t1 = newTemp();
+                    Operand t1 = Temp();
                     transExp(node->child, t1);
-                    Operand t2 = newTemp();
+                    Operand t2 = Temp();
                     transExp(node->child->sibling->sibling, t2);
                     if (!strcmp(node->child->sibling->type, "PLUS")) {
-                        genInterCode(IR_ADD, place, t1, t2);
+                        genInterCode(ADD, place, t1, t2);
                     } else if (!strcmp(node->child->sibling->type, "MINUS")) {
-                        genInterCode(IR_SUB, place, t1, t2);
+                        genInterCode(SUB, place, t1, t2);
                     } else if (!strcmp(node->child->sibling->type, "STAR")) {
-                        genInterCode(IR_MUL, place, t1, t2);
+                        genInterCode(MUL, place, t1, t2);
                     } else if (!strcmp(node->child->sibling->type, "DIV")) {
-                        genInterCode(IR_DIV, place, t1, t2);
+                        genInterCode(DIV, place, t1, t2);
                     }
                 }
             }
@@ -687,47 +631,47 @@ void transExp(Node *node, Operand place) {
                     printf("Cannot translate multi-dimensional array type or parameters of array type.\n");
                     return;
                 } else {
-                    Operand idx = newTemp();
+                    Operand idx = Temp();
                     transExp(node->child->sibling->sibling, idx);
-                    Operand base = newTemp();
+                    Operand base = Temp();
                     transExp(node->child, base);
 
                     Operand width;
-                    Operand offset = newTemp();
+                    Operand offset = Temp();
                     Operand target;
                     TableItem item = searchTableItem(base->u.name);
                     width = newOperand(
-                        OP_CONSTANT, getSize(item->fieldList->type->u.array.elem));
-                    genInterCode(IR_MUL, offset, idx, width);
-                    if (base->kind == OP_VARIABLE) {
-                        target = newTemp();
-                        genInterCode(IR_GET_ADDR, target, base);
+                        CONSTANT, getSize(item->fieldList->type->u.array.elem));
+                    genInterCode(MUL, offset, idx, width);
+                    if (base->kind == VARIABLE) {
+                        target = Temp();
+                        genInterCode(GET_ADDR, target, base);
                     } else {
                         target = base;
                     }
-                    genInterCode(IR_ADD, place, target, offset);
-                    place->kind = OP_ADDRESS;
-                    interCodeList->lastArrayName = base->u.name;
+                    genInterCode(ADD, place, target, offset);
+                    place->kind = ADDRESS;
+                    interCodeList->arrayName = base->u.name;
                 }
             }
             else {
-                Operand temp = newTemp();
+                Operand temp = Temp();
                 transExp(node->child, temp);
                 Operand target;
 
-                if (temp->kind == OP_ADDRESS) {
+                if (temp->kind == ADDRESS) {
                     target = newOperand(temp->kind, temp->u.name);
                 } else {
-                    target = newTemp();
-                    genInterCode(IR_GET_ADDR, target, temp);
+                    target = Temp();
+                    genInterCode(GET_ADDR, target, temp);
                 }
 
                 Operand id = newOperand(
-                    OP_VARIABLE, newString(node->child->sibling->sibling->val));
+                    VARIABLE, newString(node->child->sibling->sibling->val));
                 int offset = 0;
                 TableItem item = searchTableItem(temp->u.name);
                 if (item == NULL) {
-                    item = searchTableItem(interCodeList->lastArrayName);
+                    item = searchTableItem(interCodeList->arrayName);
                 }
 
                 FieldList tmp;
@@ -743,65 +687,67 @@ void transExp(Node *node, Operand place) {
                     tmp = tmp->tail;
                 }
 
-                Operand tOffset = newOperand(OP_CONSTANT, offset);
+                Operand tOffset = newOperand(CONSTANT, offset);
                 if (place) {
-                    genInterCode(IR_ADD, place, target, tOffset);
-                    setOperand(place, OP_ADDRESS, newString(id->u.name));
+                    genInterCode(ADD, place, target, tOffset);
+                    setOperand(place, ADDRESS, newString(id->u.name));
                 }
             }
         }
     }
     else if (!strcmp(node->child->type, "MINUS")) {
-        Operand t1 = newTemp();
+        Operand t1 = Temp();
         transExp(node->child->sibling, t1);
-        Operand zero = newOperand(OP_CONSTANT, 0);
-        genInterCode(IR_SUB, place, zero, t1);
+        Operand zero = newOperand(CONSTANT, 0);
+        genInterCode(SUB, place, zero, t1);
     }
     else if (!strcmp(node->child->type, "ID") && node->child->sibling) {
-        Operand funcTemp =
-            newOperand(OP_FUNCTION, newString(node->child->val));
+        Operand funcTemp = newOperand(TEXT, newString(node->child->val));
+
         if (!strcmp(node->child->sibling->sibling->type, "Args")) {
             ArgList argList = newArgList();
             transArgs(node->child->sibling->sibling, argList);
             if (!strcmp(node->child->val, "write")) {
-                genInterCode(IR_WRITE, argList->head->op);
+                genInterCode(WRITE, argList->head->op);
             } else {
+                // 逆序排列参数
+                reverseArgList(argList);
                 Arg argTemp = argList->head;
                 while (argTemp) {
-                    if (argTemp->op == OP_VARIABLE) {
-                        TableItem item =
-                            searchTableItem(argTemp->op->u.name);
-
+                    if (argTemp->op->kind == VARIABLE) {
+                        TableItem item = searchTableItem(argTemp->op->u.name);
                         if (item && item->fieldList->type->kind == STRUCTURE) {
-                            Operand varTemp = newTemp();
-                            genInterCode(IR_GET_ADDR, varTemp, argTemp->op);
-                            Operand varTempCopy =
-                                newOperand(OP_ADDRESS, varTemp->u.name);
-                            genInterCode(IR_ARG, varTempCopy);
+                            Operand varTemp = Temp();
+                            // 结构体变量取地址
+                            genInterCode(GET_ADDR, varTemp, argTemp->op);
+                            genInterCode(ARG, varTemp);
+                        } else {
+                            // 普通变量直接传递
+                            genInterCode(ARG, argTemp->op);
                         }
-                    }
-                    else {
-                        genInterCode(IR_ARG, argTemp->op);
+                    } else {
+                        // 常数或其他
+                        genInterCode(ARG, argTemp->op);
                     }
                     argTemp = argTemp->next;
                 }
                 if (place) {
-                    genInterCode(IR_CALL, place, funcTemp);
+                    genInterCode(CALL, place, funcTemp);
                 } else {
-                    Operand temp = newTemp();
-                    genInterCode(IR_CALL, temp, funcTemp);
+                    Operand temp = Temp();
+                    genInterCode(CALL, temp, funcTemp);
                 }
             }
         }
         else {
             if (!strcmp(node->child->val, "read")) {
-                genInterCode(IR_READ, place);
+                genInterCode(READ, place);
             } else {
                 if (place) {
-                    genInterCode(IR_CALL, place, funcTemp);
+                    genInterCode(CALL, place, funcTemp);
                 } else {
-                    Operand temp = newTemp();
-                    genInterCode(IR_CALL, temp, funcTemp);
+                    Operand temp = Temp();
+                    genInterCode(CALL, temp, funcTemp);
                 }
             }
         }
@@ -810,15 +756,29 @@ void transExp(Node *node, Operand place) {
         TableItem item = searchTableItem(node->child->val);
         interCodeList->tempVarNum--;
         if (item->fieldList->isArg && item->fieldList->type->kind == STRUCTURE) {
-            setOperand(place, OP_ADDRESS, newString(node->child->val));
+            setOperand(place, ADDRESS, newString(node->child->val));
         }
         else {
-            setOperand(place, OP_VARIABLE, newString(node->child->val));
+            setOperand(place, VARIABLE, newString(node->child->val));
         }
     } else {
         interCodeList->tempVarNum--;
-        setOperand(place, OP_CONSTANT, node->child->val);
+        setOperand(place, CONSTANT, node->child->val);
     }
+}
+
+void reverseArgList(ArgList argList) {
+    Arg head = argList->head;
+    Arg next;
+    Arg prev = NULL;
+
+    while(head) {
+        next = head->next;
+        head->next = prev;
+        prev = head;
+        head = next;
+    }
+    argList->head = prev;
 }
 
 void transCond(Node *node, Operand labelTrue, Operand labelFalse) {
@@ -828,60 +788,60 @@ void transCond(Node *node, Operand labelTrue, Operand labelFalse) {
         transCond(node->child->sibling, labelFalse, labelTrue);
     }
     else if (!strcmp(node->child->sibling->type, "RELOP")) {
-        Operand t1 = newTemp();
-        Operand t2 = newTemp();
+        Operand t1 = Temp();
+        Operand t2 = Temp();
         transExp(node->child, t1);
         transExp(node->child->sibling->sibling, t2);
 
         Operand relop =
-            newOperand(OP_RELOP, newString(node->child->sibling->val));
+            newOperand(TEXT, newString(node->child->sibling->val));
 
-        if (t1->kind == OP_ADDRESS) {
-            Operand temp = newTemp();
-            genInterCode(IR_READ_ADDR, temp, t1);
+        if (t1->kind == ADDRESS) {
+            Operand temp = Temp();
+            genInterCode(READ_ADDR, temp, t1);
             t1 = temp;
         }
-        if (t2->kind == OP_ADDRESS) {
-            Operand temp = newTemp();
-            genInterCode(IR_READ_ADDR, temp, t2);
+        if (t2->kind == ADDRESS) {
+            Operand temp = Temp();
+            genInterCode(READ_ADDR, temp, t2);
             t2 = temp;
         }
 
-        genInterCode(IR_IF_GOTO, t1, relop, t2, labelTrue);
-        genInterCode(IR_GOTO, labelFalse);
+        genInterCode(IF_GOTO, t1, relop, t2, labelTrue);
+        genInterCode(GOTO, labelFalse);
     } else if (!strcmp(node->child->sibling->type, "AND")) {
-        Operand label1 = newLabel();
+        Operand label1 = Label();
         transCond(node->child, label1, labelFalse);
-        genInterCode(IR_LABEL, label1);
+        genInterCode(LABEL, label1);
         transCond(node->child->sibling->sibling, labelTrue, labelFalse);
     } else if (!strcmp(node->child->sibling->type, "OR")) {
-        Operand label1 = newLabel();
+        Operand label1 = Label();
         transCond(node->child, labelTrue, label1);
-        genInterCode(IR_LABEL, label1);
+        genInterCode(LABEL, label1);
         transCond(node->child->sibling->sibling, labelTrue, labelFalse);
     } else {
-        Operand t1 = newTemp();
+        Operand t1 = Temp();
         transExp(node, t1);
-        Operand t2 = newOperand(OP_CONSTANT, 0);
-        Operand relop = newOperand(OP_RELOP, newString("!="));
+        Operand t2 = newOperand(CONSTANT, 0);
+        Operand relop = newOperand(TEXT, newString("!="));
 
-        if (t1->kind == OP_ADDRESS) {
-            Operand temp = newTemp();
-            genInterCode(IR_READ_ADDR, temp, t1);
+        if (t1->kind == ADDRESS) {
+            Operand temp = Temp();
+            genInterCode(READ_ADDR, temp, t1);
             t1 = temp;
         }
-        genInterCode(IR_IF_GOTO, t1, relop, t2, labelTrue);
-        genInterCode(IR_GOTO, labelFalse);
+        genInterCode(IF_GOTO, t1, relop, t2, labelTrue);
+        genInterCode(GOTO, labelFalse);
     }
 }
 
 void transArgs(Node *node, ArgList argList) {
     if (interError) return;
 
-    Arg temp = newArg(newTemp());
+    Arg temp = newArg(Temp());
     transExp(node->child, temp->op);
 
-    if (temp->op->kind == OP_VARIABLE) {
+    if (temp->op->kind == VARIABLE) {
         TableItem item = searchTableItem(temp->op->u.name);
         if (item && item->fieldList->type->kind == ARRAY) {
             interError = true;
@@ -900,5 +860,5 @@ void intercodeGenerate(Node* root, FILE* fp) {
     interCodeList = newInterCodeList();
     genInterCodes(root);
     if (!interError)
-        printInterCode(fp, interCodeList);
+        printInterCodeList(fp);
 }

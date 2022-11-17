@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "*.tcc": "c",
-        "*.old": "c"
+        "*.old": "c",
+        "intercode.h": "c"
     }
 }

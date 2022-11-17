@@ -30,7 +30,7 @@ struct FieldList_
 
 struct Type_
 {
-    enum { BASIC, ARRAY, STRUCTURE, FUNCTION} kind;
+    enum { BASIC, ARRAY, STRUCTURE, FUNC} kind;
     union
     {
         int basic;
