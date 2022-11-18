@@ -1,14 +1,18 @@
-int fun2(int o1, int o2) {
-    o1 = o1 + o2;
-    return o1;
+struct Operands
+{
+    int o1;
+    int o2;
+};
+
+int add(int a, int b)
+{
+    return 0;
 }
 
-int main(){
+int main()
+{
     int x, y, z;
-    x = 1;
-    y = 2;
-    x = fun2(x, y);
-    if(x < y)
-        z = 0;
+    z = add(x, y);
+    z = add(x, y);
     return 0;
 }

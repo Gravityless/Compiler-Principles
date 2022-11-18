@@ -522,7 +522,7 @@ void transVarDec(Node *node, Operand place) {
             }
         } else if (type->kind == STRUCTURE) {
             genInterCode(DEC, newOperand(VARIABLE, newString(temp->fieldList->name)),
-                         getSize(type));
+                getSize(type));
         }
     } else {
         transVarDec(node->child, place);
@@ -585,8 +585,7 @@ void transExp(Node *node, Operand place) {
     if (!strcmp(node->child->type, "LP"))
         transExp(node->child->sibling, place);
     else if (!strcmp(node->child->type, "Exp") || !strcmp(node->child->type, "NOT")) {
-        if (strcmp(node->child->sibling->type, "LB") &&
-            strcmp(node->child->sibling->type, "DOT")) {
+        if (strcmp(node->child->sibling->type, "LB") && strcmp(node->child->sibling->type, "DOT")) {
             if (!strcmp(node->child->sibling->type, "AND") ||
                 !strcmp(node->child->sibling->type, "OR") ||
                 !strcmp(node->child->sibling->type, "RELOP") ||
@@ -660,14 +659,14 @@ void transExp(Node *node, Operand place) {
                 Operand target;
 
                 if (temp->kind == ADDRESS) {
-                    target = newOperand(temp->kind, temp->u.name);
+                    // 当Exp是一个地址时，将它视为一个变量用作偏移计算
+                    target = newOperand(VARIABLE, temp->u.name);
                 } else {
                     target = Temp();
                     genInterCode(GET_ADDR, target, temp);
                 }
 
-                Operand id = newOperand(
-                    VARIABLE, newString(node->child->sibling->sibling->val));
+                Operand id = newOperand(VARIABLE, newString(node->child->sibling->sibling->val));
                 int offset = 0;
                 TableItem item = searchTableItem(temp->u.name);
                 if (item == NULL) {
@@ -757,6 +756,7 @@ void transExp(Node *node, Operand place) {
         interCodeList->tempVarNum--;
         if (item->fieldList->isArg && item->fieldList->type->kind == STRUCTURE) {
             setOperand(place, ADDRESS, newString(node->child->val));
+            // setOperand(place, VARIABLE, newString(node->child->val));
         }
         else {
             setOperand(place, VARIABLE, newString(node->child->val));

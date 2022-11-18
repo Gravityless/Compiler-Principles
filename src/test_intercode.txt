@@ -1,19 +1,14 @@
-FUNCTION fun2 :
-PARAM o1
-PARAM o2
-t1 := o1 + o2
-o1 := t1
-RETURN o1
+FUNCTION add :
+PARAM a
+PARAM b
+RETURN #0
 FUNCTION main :
-x := #1
-y := #2
 ARG y
 ARG x
-t2 := CALL fun2
-x := t2
-IF x < y GOTO label1
-GOTO label2
-LABEL label1 :
-z := #0
-LABEL label2 :
+t1 := CALL add
+z := t1
+ARG y
+ARG x
+t2 := CALL add
+z := t2
 RETURN #0
