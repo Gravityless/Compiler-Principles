@@ -2,6 +2,7 @@
     "files.associations": {
         "*.tcc": "c",
         "*.old": "c",
-        "intercode.h": "c"
+        "intercode.h": "c",
+        "semantic.h": "c"
     }
 }

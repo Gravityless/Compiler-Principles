@@ -3,10 +3,17 @@ int return2(int x1, int x2)
     return x2;
 }
 
+int return1(int y1, int y2)
+{
+    return return2(y2, y1);
+}
+
 int main()
 {
-    int a = 1, b = 2, c;
+    int a = 1, b = 2, c, d;
     c = return2(a, b);
+    d = return1(a, b);
     write(c);
+    write(d);
     return 0;
 }

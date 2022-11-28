@@ -10,32 +10,29 @@ VarTable varTable;
 
 Registers initRegisters() {
     Registers p = (Registers)malloc(sizeof(struct Registers_));
-    assert(p != NULL);
     for (int i = 0; i < REG_NUM; i++) {
-        p->regLsit[i] = newRegister(REG_NAME[i]);
+        p->regList[i] = newRegister(REG_NAME[i]);
     }
-    p->regLsit[0]->isFree = false;  // $0不允许使用
-    p->lastChangedNo = 0;
+    p->regList[0]->avail = false;  // $0不允许使用
+    p->lastUsed = 0;
     return p;
 }
 
-void resetRegisters(Registers registers) {
+void resetRegisters() {
     for (int i = 1; i < REG_NUM; i++) {
-        registers->regLsit[i]->isFree = true;
+        registers->regList[i]->avail = true;
     }
 }
 
-void deleteRegisters(Registers registers) {
-    assert(registers != NULL);
+void deleteRegisters() {
     for (int i = 0; i < REG_NUM; i++) {
-        free(registers->regLsit[i]);
+        free(registers->regList[i]);
     }
     free(registers);
 }
 
 VarTable newVarTable() {
     VarTable p = (VarTable)malloc(sizeof(struct VarTable_));
-    assert(p != NULL);
     p->varListReg = newVariableList();
     p->varListMem = newVariableList();
     p->inFunc = false;
@@ -43,8 +40,7 @@ VarTable newVarTable() {
     return p;
 }
 
-void deleteVarTable(VarTable varTable) {
-    assert(varTable != NULL);
+void deleteVarTable() {
     clearVariableList(varTable->varListReg);
     clearVariableList(varTable->varListMem);
     free(varTable->varListReg);
@@ -54,7 +50,6 @@ void deleteVarTable(VarTable varTable) {
 
 VariableList newVariableList() {
     VariableList p = (VariableList)malloc(sizeof(struct VariableList_));
-    assert(p != NULL);
     p->head = NULL;
     p->cur = NULL;
     return p;
@@ -104,7 +99,6 @@ void delVarible(VariableList varList, Varible var) {
 }
 
 void clearVariableList(VariableList varList) {
-    assert(varList != NULL);
     Varible temp = varList->head;
     while (temp) {
         Varible p = temp;
@@ -115,8 +109,7 @@ void clearVariableList(VariableList varList) {
     varList->cur = NULL;
 }
 
-int checkVarible(FILE* fp, VarTable varTable, Registers registers,
-                 Operand op) {
+int checkVarible(FILE* fp, Operand op) {
     if (op->kind != CONSTANT) {
         // 若为变量，先看变量表里有没有，有就返回，没有新分配一个
         Varible temp = varTable->varListReg->head;
@@ -126,24 +119,24 @@ int checkVarible(FILE* fp, VarTable varTable, Registers registers,
                 return temp->regNo;
             temp = temp->next;
         }
-        int regNo = allocReg(registers, varTable, op);
+        int regNo = allocReg(op);
         return regNo;
     } else {
         // 立即数则找个寄存器放进去, 如果为0直接返回0号寄存器
         if (op->u.val == 0) return ZERO;
-        int regNo = allocReg(registers, varTable, op);
-        fprintf(fp, "  li %s, %d\n", registers->regLsit[regNo]->name,
+        int regNo = allocReg(op);
+        fprintf(fp, "  li %s, %d\n", registers->regList[regNo]->name,
                 op->u.val);
         return regNo;
     }
 }
 
-int allocReg(Registers registers, VarTable varTable, Operand op) {
+int allocReg(Operand op) {
     // 先看有无空闲，有就直接放
     // printf("allocNewReg\n");
     for (int i = T0; i <= T9; i++) {
-        if (registers->regLsit[i]->isFree) {
-            registers->regLsit[i]->isFree = 0;
+        if (registers->regList[i]->avail) {
+            registers->regList[i]->avail = 0;
             addVarible(varTable->varListReg, i, op);
             return i;
         }
@@ -154,9 +147,9 @@ int allocReg(Registers registers, VarTable varTable, Operand op) {
     Varible temp = varTable->varListReg->head;
     while (temp) {
         if (temp->op->kind == CONSTANT &&
-            temp->regNo != registers->lastChangedNo) {
+            temp->regNo != registers->lastUsed) {
             int regNo = temp->regNo;
-            registers->lastChangedNo = regNo;
+            registers->lastUsed = regNo;
             delVarible(varTable->varListReg, temp);
             addVarible(varTable->varListReg, regNo, op);
             return regNo;
@@ -169,9 +162,9 @@ int allocReg(Registers registers, VarTable varTable, Operand op) {
     while (temp) {
         if (temp->op->kind != CONSTANT) {
             if (temp->op->u.name[0] == 't' &&
-                temp->regNo != registers->lastChangedNo) {
+                temp->regNo != registers->lastUsed) {
                 int regNo = temp->regNo;
-                registers->lastChangedNo = regNo;
+                registers->lastUsed = regNo;
                 delVarible(varTable->varListReg, temp);
                 addVarible(varTable->varListReg, regNo, op);
                 return regNo;
@@ -183,14 +176,12 @@ int allocReg(Registers registers, VarTable varTable, Operand op) {
 
 Register newRegister(char* regName) {
     Register p = (Register)malloc(sizeof(struct Register_));
-    assert(p != NULL);
-    p->isFree = true;
+    p->avail = true;
     p->name = regName;
 }
 
 Varible newVarible(int regNo, Operand op) {
     Varible p = (Varible)malloc(sizeof(struct Varible_));
-    assert(p != NULL);
     p->regNo = regNo;
     p->op = op;
     p->next = NULL;
@@ -199,20 +190,20 @@ Varible newVarible(int regNo, Operand op) {
 void genAssemblyCode(FILE* fp) {
     registers = initRegisters();
     varTable = newVarTable();
-    initCode(fp);
+    initAsm(fp);
     InterCodes temp = interCodeList->head;
     while (temp) {
-        interToAssem(fp, temp);
+        Ir2Asm(fp, temp);
         // printVariableList(varTable->varListReg);
         temp = temp->next;
     }
-    deleteRegisters(registers);
-    deleteVarTable(varTable);
+    deleteRegisters();
+    deleteVarTable();
     registers = NULL;
     varTable = NULL;
 }
 
-void initCode(FILE* fp) {
+void initAsm(FILE* fp) {
     fprintf(fp, ".data\n");
     fprintf(fp, "_prompt: .asciiz \"Enter an integer:\"\n");
     fprintf(fp, "_ret: .asciiz \"\\n\"\n");
@@ -359,9 +350,7 @@ void printinter(InterCodes cur) {
     printf("\n");
 }
 
-void interToAssem(FILE* fp, InterCodes interCodes) {
-    // printf("gen one\n");
-    // printinter(interCodes);
+void Ir2Asm(FILE* fp, InterCodes interCodes) {
     InterCode interCode = interCodes->code;
     int kind = interCode->kind;
 
@@ -371,7 +360,7 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
         fprintf(fp, "\n%s:\n", interCode->u.sinOp.op->u.name);
 
         // 新函数，寄存器重新变为可用，并清空变量表（因为假定没有全局变量）
-        resetRegisters(registers);
+        resetRegisters();
         clearVariableList(varTable->varListReg);
         clearVariableList(varTable->varListMem);
 
@@ -394,11 +383,10 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
                                temp->code->u.sinOp.op);
                 } else {
                     // 剩下的要用栈存
-                    int regNo = checkVarible(fp, varTable, registers,
-                                             temp->code->u.sinOp.op);
+                    int regNo = checkVarible(fp, temp->code->u.sinOp.op);
                     fprintf(
                         fp, "  lw %s, %d($fp)\n",
-                        registers->regLsit[regNo]->name,
+                        registers->regList[regNo]->name,
                         (item->fieldList->type->u.function.argc - 1 - argc) * 4);
                 }
                 argc++;
@@ -408,9 +396,8 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
     } else if (kind == GOTO) {
         fprintf(fp, "  j %s\n", interCode->u.sinOp.op->u.name);
     } else if (kind == RETURN) {
-        int RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.sinOp.op);
-        fprintf(fp, "  move $v0, %s\n", registers->regLsit[RegNo]->name);
+        int RegNo = checkVarible(fp, interCode->u.sinOp.op);
+        fprintf(fp, "  move $v0, %s\n", registers->regList[RegNo]->name);
         fprintf(fp, "  jr $ra\n");
     } else if (kind == ARG) {
         // 需要在call里处理
@@ -422,14 +409,12 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
         fprintf(fp, "  jal read\n");
         fprintf(fp, "  lw $ra, 0($sp)\n");
         fprintf(fp, "  addi $sp, $sp, 4\n");
-        int RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.sinOp.op);
-        fprintf(fp, "  move %s, $v0\n", registers->regLsit[RegNo]->name);
+        int RegNo = checkVarible(fp, interCode->u.sinOp.op);
+        fprintf(fp, "  move %s, $v0\n", registers->regList[RegNo]->name);
     } else if (kind == WRITE) {
-        int RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.sinOp.op);
+        int RegNo = checkVarible(fp, interCode->u.sinOp.op);
         if (varTable->inFunc == false) {
-            fprintf(fp, "  move $a0, %s\n", registers->regLsit[RegNo]->name);
+            fprintf(fp, "  move $a0, %s\n", registers->regList[RegNo]->name);
             fprintf(fp, "  addi $sp, $sp, -4\n");
             fprintf(fp, "  sw $ra, 0($sp)\n");
             fprintf(fp, "  jal write\n");
@@ -440,55 +425,43 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
             fprintf(fp, "  addi $sp, $sp, -8\n");
             fprintf(fp, "  sw $a0, 0($sp)\n");
             fprintf(fp, "  sw $ra, 4($sp)\n");
-            fprintf(fp, "  move $a0, %s\n", registers->regLsit[RegNo]->name);
+            fprintf(fp, "  move $a0, %s\n", registers->regList[RegNo]->name);
             fprintf(fp, "  jal write\n");
             fprintf(fp, "  lw $a0, 0($sp)\n");
             fprintf(fp, "  lw $ra, 4($sp)\n");
             fprintf(fp, "  addi $sp, $sp, 8\n");
         }
     } else if (kind == ASSIGN) {
-        int leftRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.left);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
         // 右值为立即数，直接放左值寄存器里
         if (interCode->u.assign.right->kind == CONSTANT) {
-            fprintf(fp, "  li %s, %d\n", registers->regLsit[leftRegNo]->name,
+            fprintf(fp, "  li %s, %d\n", registers->regList[leftRegNo]->name,
                     interCode->u.assign.right->u.val);
         }
         // 右值为变量，先check再move赋值寄存器
         else {
-            int rightRegNo = checkVarible(fp, varTable, registers,
-                                          interCode->u.assign.right);
-            fprintf(fp, "  move %s, %s\n", registers->regLsit[leftRegNo]->name,
-                    registers->regLsit[rightRegNo]->name);
+            int rightRegNo = checkVarible(fp, interCode->u.assign.right);
+            fprintf(fp, "  move %s, %s\n", registers->regList[leftRegNo]->name,
+                    registers->regList[rightRegNo]->name);
         }
     } else if (kind == GET_ADDR) {
-        int leftRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.left);
-        // int rightRegNo =
-        //     checkVarible(fp, varTable, registers, interCode->u.assign.right);
-        fprintf(fp, "  la %s, %s\n", registers->regLsit[leftRegNo]->name,
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
+        fprintf(fp, "  la %s, %s\n", registers->regList[leftRegNo]->name,
                 interCode->u.assign.right->u.name);
-        // fprintf(fp, "  move %s, %s\n", registers->regLsit[leftRegNo]->name,
-        //         registers->regLsit[rightRegNo]->name);
     } else if (kind == READ_ADDR) {
-        int leftRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.left);
-        int rightRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.right);
-        fprintf(fp, "  lw %s, 0(%s)\n", registers->regLsit[leftRegNo]->name,
-                registers->regLsit[rightRegNo]->name);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
+        int rightRegNo = checkVarible(fp, interCode->u.assign.right);
+        fprintf(fp, "  lw %s, 0(%s)\n", registers->regList[leftRegNo]->name,
+                registers->regList[rightRegNo]->name);
     } else if (kind == WRITE_ADDR) {
-        int leftRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.left);
-        int rightRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.right);
-        fprintf(fp, "  sw %s, 0(%s)\n", registers->regLsit[rightRegNo]->name,
-                registers->regLsit[leftRegNo]->name);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
+        int rightRegNo = checkVarible(fp, interCode->u.assign.right);
+        fprintf(fp, "  sw %s, 0(%s)\n", registers->regList[rightRegNo]->name,
+                registers->regList[leftRegNo]->name);
     } else if (kind == CALL) {
         TableItem calledFunc =
             searchTableItem(interCode->u.assign.right->u.name);
-        int leftRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.assign.left);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
         // 函数调用前的准备
         fprintf(fp, "  addi $sp, $sp, -4\n");
         fprintf(fp, "  sw $ra, 0($sp)\n");
@@ -503,17 +476,17 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
                 if (i > calledFunc->fieldList->type->u.function.argc) break;
                 if (i < 4) {
                     fprintf(fp, "  sw %s, %d($sp)\n",
-                            registers->regLsit[A0 + i]->name, i * 4);
+                            registers->regList[A0 + i]->name, i * 4);
                     Varible var = varTable->varListReg->head;
                     while (var && var->regNo != A0 + i) {
                         var = var->next;
                     }
                     delVarible(varTable->varListReg, var);
                     addVarible(varTable->varListMem, -1, var->op);
-                    int regNo = checkVarible(fp, varTable, registers, var->op);
+                    int regNo = checkVarible(fp, var->op);
                     fprintf(fp, "  move %s, %s\n",
-                            registers->regLsit[regNo]->name,
-                            registers->regLsit[A0 + i]->name);
+                            registers->regList[regNo]->name,
+                            registers->regList[A0 + i]->name);
                 }
             }
         }
@@ -523,20 +496,19 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
         int argc = 0;
         while (arg && argc < calledFunc->fieldList->type->u.function.argc) {
             if (arg->code->kind == ARG) {
-                int argRegNo = checkVarible(fp, varTable, registers,
-                                            arg->code->u.sinOp.op);
+                int argRegNo = checkVarible(fp, arg->code->u.sinOp.op);
                 // 前4个参数直接用寄存器存
                 if (argc < 4) {
                     fprintf(fp, "  move %s, %s\n",
-                            registers->regLsit[A0 + argc]->name,
-                            registers->regLsit[argRegNo]->name);
+                            registers->regList[A0 + argc]->name,
+                            registers->regList[argRegNo]->name);
                     argc++;
                 }
                 // 4个以后的参数压栈
                 else {
                     fprintf(fp, "  addi $sp, $sp, -4\n");
                     fprintf(fp, "  sw %s, 0($sp)\n",
-                            registers->regLsit[argRegNo]->name);
+                            registers->regList[argRegNo]->name);
                     fprintf(fp, "  move $fp, $sp\n");
                     argc++;
                 }
@@ -555,7 +527,7 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
                 if (i > calledFunc->fieldList->type->u.function.argc) break;
                 if (i < 4) {
                     fprintf(fp, "  lw %s, %d($sp)\n",
-                            registers->regLsit[A0 + i]->name, i * 4);
+                            registers->regList[A0 + i]->name, i * 4);
                     Varible var = varTable->varListReg->head;
                     while (var) {
                         if (var->op->kind != CONSTANT &&
@@ -565,7 +537,7 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
                         var = var->next;
                     }
                     if (var) {
-                        registers->regLsit[var->regNo]->isFree = true;
+                        registers->regList[var->regNo]->avail = true;
                         var->regNo = A0 + i;
                     } else {
                         addVarible(varTable->varListReg, A0 + i,
@@ -581,123 +553,104 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
         popa(fp);
         fprintf(fp, "  lw $ra, 0($sp)\n");
         fprintf(fp, "  addi $sp, $sp, 4\n");
-        fprintf(fp, "  move %s, $v0\n", registers->regLsit[leftRegNo]->name);
+        fprintf(fp, "  move %s, $v0\n", registers->regList[leftRegNo]->name);
     } else if (kind == ADD) {
-        int resultRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.result);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
         // 常数 常数
         if (interCode->u.binOp.op1->kind == CONSTANT &&
             interCode->u.binOp.op2->kind == CONSTANT) {
-            fprintf(fp, "  li %s, %d\n", registers->regLsit[resultRegNo]->name,
+            fprintf(fp, "  li %s, %d\n", registers->regList[resultRegNo]->name,
                     interCode->u.binOp.op1->u.val +
                         interCode->u.binOp.op2->u.val);
         }
         // 变量 常数
         else if (interCode->u.binOp.op1->kind != CONSTANT &&
                  interCode->u.binOp.op2->kind == CONSTANT) {
-            int op1RegNo =
-                checkVarible(fp, varTable, registers, interCode->u.binOp.op1);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
             fprintf(fp, "  addi %s, %s, %d\n",
-                    registers->regLsit[resultRegNo]->name,
-                    registers->regLsit[op1RegNo]->name,
+                    registers->regList[resultRegNo]->name,
+                    registers->regList[op1RegNo]->name,
                     interCode->u.binOp.op2->u.val);
         }
         // 变量 变量
         else {
-            int op1RegNo =
-                checkVarible(fp, varTable, registers, interCode->u.binOp.op1);
-            int op2RegNo =
-                checkVarible(fp, varTable, registers, interCode->u.binOp.op2);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+            int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
             fprintf(fp, "  add %s, %s, %s\n",
-                    registers->regLsit[resultRegNo]->name,
-                    registers->regLsit[op1RegNo]->name,
-                    registers->regLsit[op2RegNo]->name);
+                    registers->regList[resultRegNo]->name,
+                    registers->regList[op1RegNo]->name,
+                    registers->regList[op2RegNo]->name);
         }
     } else if (kind == SUB) {
-        int resultRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.result);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
         // 常数 常数
         if (interCode->u.binOp.op1->kind == CONSTANT &&
             interCode->u.binOp.op2->kind == CONSTANT) {
-            fprintf(fp, "  li %s, %d\n", registers->regLsit[resultRegNo]->name,
+            fprintf(fp, "  li %s, %d\n", registers->regList[resultRegNo]->name,
                     interCode->u.binOp.op1->u.val -
                         interCode->u.binOp.op2->u.val);
         }
         // 变量 常数
         else if (interCode->u.binOp.op1->kind != CONSTANT &&
                  interCode->u.binOp.op2->kind == CONSTANT) {
-            int op1RegNo =
-                checkVarible(fp, varTable, registers, interCode->u.binOp.op1);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
             fprintf(fp, "  addi %s, %s, %d\n",
-                    registers->regLsit[resultRegNo]->name,
-                    registers->regLsit[op1RegNo]->name,
+                    registers->regList[resultRegNo]->name,
+                    registers->regList[op1RegNo]->name,
                     -interCode->u.binOp.op2->u.val);
         }
         // 变量 变量
         else {
-            int op1RegNo =
-                checkVarible(fp, varTable, registers, interCode->u.binOp.op1);
-            int op2RegNo =
-                checkVarible(fp, varTable, registers, interCode->u.binOp.op2);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+            int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
             fprintf(fp, "  sub %s, %s, %s\n",
-                    registers->regLsit[resultRegNo]->name,
-                    registers->regLsit[op1RegNo]->name,
-                    registers->regLsit[op2RegNo]->name);
+                    registers->regList[resultRegNo]->name,
+                    registers->regList[op1RegNo]->name,
+                    registers->regList[op2RegNo]->name);
         }
     } else if (kind == MUL) {
-        int resultRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.result);
-        int op1RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.op1);
-        int op2RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.op2);
-        fprintf(fp, "  mul %s, %s, %s\n", registers->regLsit[resultRegNo]->name,
-                registers->regLsit[op1RegNo]->name,
-                registers->regLsit[op2RegNo]->name);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
+        int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+        int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
+        fprintf(fp, "  mul %s, %s, %s\n", registers->regList[resultRegNo]->name,
+                registers->regList[op1RegNo]->name,
+                registers->regList[op2RegNo]->name);
     } else if (kind == DIV) {
-        int resultRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.result);
-        int op1RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.op1);
-        int op2RegNo =
-            checkVarible(fp, varTable, registers, interCode->u.binOp.op2);
-        fprintf(fp, "  div %s, %s\n", registers->regLsit[op1RegNo]->name,
-                registers->regLsit[op2RegNo]->name);
-        fprintf(fp, "  mflo %s\n", registers->regLsit[resultRegNo]->name);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
+        int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+        int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
+        fprintf(fp, "  div %s, %s\n", registers->regList[op1RegNo]->name,
+                registers->regList[op2RegNo]->name);
+        fprintf(fp, "  mflo %s\n", registers->regList[resultRegNo]->name);
     } else if (kind == DEC) {
-        // init 时候坐到全局变量里了
-        // fprintf(fp, "  %s: .word %d\n", interCode->u.dec.op->u.name,
-        //         interCode->u.dec.size);
-
+        // init 时候添加到全局变量里了
     } else if (kind == IF_GOTO) {
         char* relopName = interCode->u.ifGoto.relop->u.name;
-        int xRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.ifGoto.x);
-        int yRegNo =
-            checkVarible(fp, varTable, registers, interCode->u.ifGoto.y);
+        int xRegNo = checkVarible(fp, interCode->u.ifGoto.x);
+        int yRegNo = checkVarible(fp, interCode->u.ifGoto.y);
         if (!strcmp(relopName, "=="))
-            fprintf(fp, "  beq %s, %s, %s\n", registers->regLsit[xRegNo]->name,
-                    registers->regLsit[yRegNo]->name,
+            fprintf(fp, "  beq %s, %s, %s\n", registers->regList[xRegNo]->name,
+                    registers->regList[yRegNo]->name,
                     interCode->u.ifGoto.z->u.name);
         else if (!strcmp(relopName, "!="))
-            fprintf(fp, "  bne %s, %s, %s\n", registers->regLsit[xRegNo]->name,
-                    registers->regLsit[yRegNo]->name,
+            fprintf(fp, "  bne %s, %s, %s\n", registers->regList[xRegNo]->name,
+                    registers->regList[yRegNo]->name,
                     interCode->u.ifGoto.z->u.name);
         else if (!strcmp(relopName, ">"))
-            fprintf(fp, "  bgt %s, %s, %s\n", registers->regLsit[xRegNo]->name,
-                    registers->regLsit[yRegNo]->name,
+            fprintf(fp, "  bgt %s, %s, %s\n", registers->regList[xRegNo]->name,
+                    registers->regList[yRegNo]->name,
                     interCode->u.ifGoto.z->u.name);
         else if (!strcmp(relopName, "<"))
-            fprintf(fp, "  blt %s, %s, %s\n", registers->regLsit[xRegNo]->name,
-                    registers->regLsit[yRegNo]->name,
+            fprintf(fp, "  blt %s, %s, %s\n", registers->regList[xRegNo]->name,
+                    registers->regList[yRegNo]->name,
                     interCode->u.ifGoto.z->u.name);
         else if (!!strcmp(relopName, ">="))
-            fprintf(fp, "  bge %s, %s, %s\n", registers->regLsit[xRegNo]->name,
-                    registers->regLsit[yRegNo]->name,
+            fprintf(fp, "  bge %s, %s, %s\n", registers->regList[xRegNo]->name,
+                    registers->regList[yRegNo]->name,
                     interCode->u.ifGoto.z->u.name);
         else if (strcmp(relopName, "<="))
-            fprintf(fp, "  ble %s, %s, %s\n", registers->regLsit[xRegNo]->name,
-                    registers->regLsit[yRegNo]->name,
+            fprintf(fp, "  ble %s, %s, %s\n", registers->regList[xRegNo]->name,
+                    registers->regList[yRegNo]->name,
                     interCode->u.ifGoto.z->u.name);
     }
 }
@@ -705,14 +658,14 @@ void interToAssem(FILE* fp, InterCodes interCodes) {
 void pusha(FILE* fp) {
     fprintf(fp, "  addi $sp, $sp, -72\n");
     for (int i = T0; i <= T9; i++) {
-        fprintf(fp, "  sw %s, %d($sp)\n", registers->regLsit[i]->name,
+        fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[i]->name,
                 (i - T0) * 4);
     }
 }
 
 void popa(FILE* fp) {
     for (int i = T0; i <= T9; i++) {
-        fprintf(fp, "  lw %s, %d($sp)\n", registers->regLsit[i]->name,
+        fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[i]->name,
                 (i - T0) * 4);
     }
     fprintf(fp, "  addi $sp, $sp, 72\n");
