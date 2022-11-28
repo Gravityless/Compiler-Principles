@@ -859,6 +859,6 @@ void transArgs(Node *node, ArgList argList) {
 void intercodeGenerate(Node* root, FILE* fp) {
     interCodeList = newInterCodeList();
     genInterCodes(root);
-    if (!interError)
+    if (!interError && fp)
         printInterCodeList(fp);
 }

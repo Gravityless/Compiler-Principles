@@ -1,18 +1,12 @@
-struct Operands
+int return2(int x1, int x2)
 {
-    int o1;
-    int o2;
-};
-
-int add(int a, int b)
-{
-    return 0;
+    return x2;
 }
 
 int main()
 {
-    int x, y, z;
-    z = add(x, y);
-    z = add(x, y);
+    int a = 1, b = 2, c;
+    c = return2(a, b);
+    write(c);
     return 0;
 }

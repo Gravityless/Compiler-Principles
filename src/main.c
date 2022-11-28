@@ -31,7 +31,8 @@ int main(int argc, char** argv) {
         semanticAnalysis(root);
         
         // printf("start generating intercodes\n");
-        intercodeGenerate(root, output);
+        // intercodeGenerate(root, output);
+        intercodeGenerate(root, NULL);
 
         // printf("start assemblying\n");
         genAssemblyCode(output);
