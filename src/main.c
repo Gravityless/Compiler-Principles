@@ -1,6 +1,7 @@
 #include "node.h"
 #include "semantic.h"
 #include "intercode.h"
+#include "assembly.h"
 
 // extern FILE *yyin;
 extern int yylex();
@@ -11,16 +12,16 @@ extern Node* root;
 int errornum = 0;
 
 int main(int argc, char** argv) {    
-    FILE *codeList = fopen(argv[1], "r");
-    FILE *irList = fopen(argv[2], "w+");
-    if (!codeList) {
+    FILE *input = fopen(argv[1], "r");
+    FILE *output = fopen(argv[2], "w+");
+    if (!input) {
         perror(argv[1]);
         return -1;
     }
-    yyrestart(codeList);
+    yyrestart(input);
     // yylex();
     yyparse();
-    fclose(codeList);
+    fclose(input);
 
     if (errornum == 0) {
         // printf("start generating syntax tree\n");
@@ -30,7 +31,10 @@ int main(int argc, char** argv) {
         semanticAnalysis(root);
         
         // printf("start generating intercodes\n");
-        intercodeGenerate(root, irList);
+        intercodeGenerate(root, output);
+
+        // printf("start assemblying\n");
+        genAssemblyCode(output);
 
         delTable(table);
     }
