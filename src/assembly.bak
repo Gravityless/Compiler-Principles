@@ -88,8 +88,6 @@ void clearVariableList(VariableList varList) {
         temp = temp->next;
         free(p);
     }
-    varList->head = NULL;
-    varList->cur = NULL;
 }
 
 int getVarible(FILE* fp, Operand op) {
@@ -386,7 +384,8 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
                     Varible var = varTable->varListReg->head;
                     while (var) {
                         if (var->op->kind != CONSTANT &&
-                            !strcmp(varTable->varListMem->head->op->u.name, var->op->u.name))
+                            !strcmp(varTable->varListMem->head->op->u.name,
+                                    var->op->u.name))
                             break;
                         var = var->next;
                     }
@@ -394,9 +393,11 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
                         registers->regList[var->regNo]->avail = true;
                         var->regNo = A0 + i;
                     } else {
-                        addVarible(varTable->varListReg, A0 + i, varTable->varListMem->head->op);
+                        addVarible(varTable->varListReg, A0 + i,
+                                   varTable->varListMem->head->op);
                     }
-                    delVarible(varTable->varListMem, varTable->varListMem->head);
+                    delVarible(varTable->varListMem,
+                               varTable->varListMem->head);
                 }
             }
             fprintf(fp, "  addi $sp, $sp, %d\n", callee->fieldList->type->u.function.argc * 4);

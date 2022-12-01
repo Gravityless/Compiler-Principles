@@ -33,10 +33,10 @@ struct VariableList_ {
 };
 
 struct VarTable_ {
-    VariableList varListReg;            // 寄存器中的变量表
-    VariableList varListMem;            // 内存中的变量表
+    VariableList varListReg;            // 寄存器中的变量
+    VariableList varListMem;            // 内存中的变量
     bool inFunc;
-    char* curFuncName;
+    char* funcName;
 };
 
 typedef enum _regNo {
@@ -69,7 +69,7 @@ Varible newVarible(int regNo, Operand op);
 void addVarible(VariableList varList, int regNo, Operand op);
 void delVarible(VariableList varList, Varible var);
 void clearVariableList(VariableList varList);
-int checkVarible(FILE* fp, Operand op);
+int getVarible(FILE* fp, Operand op);
 
 void genAssemblyCode(FILE* fp);
 void initAsm(FILE* fp);

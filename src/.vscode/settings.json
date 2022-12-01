@@ -3,6 +3,7 @@
         "*.tcc": "c",
         "*.old": "c",
         "intercode.h": "c",
-        "semantic.h": "c"
+        "semantic.h": "c",
+        "node.h": "c"
     }
 }

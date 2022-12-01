@@ -55,8 +55,24 @@ VariableList newVariableList() {
     return p;
 }
 
+void printVariableList(VariableList varList) {
+    printf("----------VariableList------------\n");
+    Varible temp = varList->head;
+    while (temp) {
+        if (temp->op->kind == CONSTANT)
+            printf("reg: %s, value: %d\n", REG_NAME[temp->regNo],
+                   temp->op->u.val);
+        else
+            printf("reg: %s, varName: %s\n", REG_NAME[temp->regNo],
+                   temp->op->u.name);
+        temp = temp->next;
+    }
+    printf("------------end--------------\n");
+}
+
 void addVarible(VariableList varList, int regNo, Operand op) {
     Varible newVar = newVarible(regNo, op);
+    // reg_list[reg_num].is_free=0;
     if (varList->head == NULL) {
         varList->head = newVar;
         varList->cur = newVar;
@@ -77,6 +93,7 @@ void delVarible(VariableList varList, Varible var) {
         }
         if (varList->cur == var) varList->cur = temp;
         temp->next = var->next;
+        var->next = NULL;
         free(var);
     }
 }
@@ -92,12 +109,13 @@ void clearVariableList(VariableList varList) {
     varList->cur = NULL;
 }
 
-int getVarible(FILE* fp, Operand op) {
+int checkVarible(FILE* fp, Operand op) {
     if (op->kind != CONSTANT) {
         // 若为变量，先看变量表里有没有，有就返回，没有新分配一个
         Varible temp = varTable->varListReg->head;
         while (temp) {
-            if (temp->op->kind != CONSTANT && !strcmp(temp->op->u.name, op->u.name))
+            if (temp->op->kind != CONSTANT &&
+                !strcmp(temp->op->u.name, op->u.name))
                 return temp->regNo;
             temp = temp->next;
         }
@@ -107,13 +125,15 @@ int getVarible(FILE* fp, Operand op) {
         // 立即数则找个寄存器放进去, 如果为0直接返回0号寄存器
         if (op->u.val == 0) return ZERO;
         int regNo = allocReg(op);
-        fprintf(fp, "  li %s, %d\n", registers->regList[regNo]->name, op->u.val);
+        fprintf(fp, "  li %s, %d\n", registers->regList[regNo]->name,
+                op->u.val);
         return regNo;
     }
 }
 
 int allocReg(Operand op) {
     // 先看有无空闲，有就直接放
+    // printf("allocNewReg\n");
     for (int i = T0; i <= T9; i++) {
         if (registers->regList[i]->avail) {
             registers->regList[i]->avail = 0;
@@ -121,11 +141,13 @@ int allocReg(Operand op) {
             return i;
         }
     }
+    // printf("nofree\n");
     // 无空闲了，需要找一个寄存器释放掉
     // 可以先释放掉最近没用过的立即数
     Varible temp = varTable->varListReg->head;
     while (temp) {
-        if (temp->op->kind == CONSTANT && temp->regNo != registers->lastUsed) {
+        if (temp->op->kind == CONSTANT &&
+            temp->regNo != registers->lastUsed) {
             int regNo = temp->regNo;
             registers->lastUsed = regNo;
             delVarible(varTable->varListReg, temp);
@@ -139,7 +161,8 @@ int allocReg(Operand op) {
     temp = varTable->varListReg->head;
     while (temp) {
         if (temp->op->kind != CONSTANT) {
-            if (temp->op->u.name[0] == 't' && temp->regNo != registers->lastUsed) {
+            if (temp->op->u.name[0] == 't' &&
+                temp->regNo != registers->lastUsed) {
                 int regNo = temp->regNo;
                 registers->lastUsed = regNo;
                 delVarible(varTable->varListReg, temp);
@@ -171,10 +194,13 @@ void genAssemblyCode(FILE* fp) {
     InterCodes temp = interCodeList->head;
     while (temp) {
         Ir2Asm(fp, temp);
+        // printVariableList(varTable->varListReg);
         temp = temp->next;
     }
     deleteRegisters();
     deleteVarTable();
+    registers = NULL;
+    varTable = NULL;
 }
 
 void initAsm(FILE* fp) {
@@ -183,10 +209,12 @@ void initAsm(FILE* fp) {
     fprintf(fp, "_ret: .asciiz \"\\n\"\n");
     fprintf(fp, ".globl main\n");
 
+    // 无重复变量名，直接把数组当全局变量声明了
     InterCodes temp = interCodeList->head;
     while (temp) {
         if (temp->code->kind == DEC)
-            fprintf(fp, "%s: .word %d\n", temp->code->u.dec.op->u.name, temp->code->u.dec.size);
+            fprintf(fp, "%s: .word %d\n", temp->code->u.dec.op->u.name,
+                    temp->code->u.dec.size);
         temp = temp->next;
     }
 
@@ -211,6 +239,117 @@ void initAsm(FILE* fp) {
     fprintf(fp, "  jr $ra\n");
 }
 
+void printinter(InterCodes cur) {
+    FILE* fp = NULL;
+    switch (cur->code->kind) {
+        case LABEL:
+            printf("LABEL ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            printf(" :");
+            break;
+        case FUNCTION:
+            printf("FUNCTION ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            printf(" :");
+            break;
+        case ASSIGN:
+            printOperand(fp, cur->code->u.assign.left);
+            printf(" := ");
+            printOperand(fp, cur->code->u.assign.right);
+            break;
+        case ADD:
+            printOperand(fp, cur->code->u.binOp.result);
+            printf(" := ");
+            printOperand(fp, cur->code->u.binOp.op1);
+            printf(" + ");
+            printOperand(fp, cur->code->u.binOp.op2);
+            break;
+        case SUB:
+            printOperand(fp, cur->code->u.binOp.result);
+            printf(" := ");
+            printOperand(fp, cur->code->u.binOp.op1);
+            printf(" - ");
+            printOperand(fp, cur->code->u.binOp.op2);
+            break;
+        case MUL:
+            printOperand(fp, cur->code->u.binOp.result);
+            printf(" := ");
+            printOperand(fp, cur->code->u.binOp.op1);
+            printf(" * ");
+            printOperand(fp, cur->code->u.binOp.op2);
+            break;
+        case DIV:
+            printOperand(fp, cur->code->u.binOp.result);
+            printf(" := ");
+            printOperand(fp, cur->code->u.binOp.op1);
+            printf(" / ");
+            printOperand(fp, cur->code->u.binOp.op2);
+            break;
+        case GET_ADDR:
+            printOperand(fp, cur->code->u.assign.left);
+            printf(" := &");
+            printOperand(fp, cur->code->u.assign.right);
+            break;
+        case READ_ADDR:
+            printOperand(fp, cur->code->u.assign.left);
+            printf(" := *");
+            printOperand(fp, cur->code->u.assign.right);
+            break;
+        case WRITE_ADDR:
+            printf("*");
+            printOperand(fp, cur->code->u.assign.left);
+            printf(" := ");
+            printOperand(fp, cur->code->u.assign.right);
+            break;
+        case GOTO:
+            printf("GOTO ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            break;
+        case IF_GOTO:
+            printf("IF ");
+            printOperand(fp, cur->code->u.ifGoto.x);
+            printf(" ");
+            printOperand(fp, cur->code->u.ifGoto.relop);
+            printf(" ");
+            printOperand(fp, cur->code->u.ifGoto.y);
+            printf(" GOTO ");
+            printOperand(fp, cur->code->u.ifGoto.z);
+            break;
+        case RETURN:
+            printf("RETURN ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            break;
+        case DEC:
+            printf("DEC ");
+            printOperand(fp, cur->code->u.dec.op);
+            printf(" ");
+            printf("%d", cur->code->u.dec.size);
+            break;
+        case ARG:
+            printf("ARG ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            break;
+        case CALL:
+            printOperand(fp, cur->code->u.assign.left);
+            printf(" := CALL ");
+            printOperand(fp, cur->code->u.assign.right);
+            break;
+        case PARAM:
+            printf("PARAM ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            break;
+        case READ:
+            printf("READ ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            break;
+        case WRITE:
+            printf("WRITE ");
+            printOperand(fp, cur->code->u.sinOp.op);
+            break;
+    }
+    printf("\n");
+}
+
 void Ir2Asm(FILE* fp, InterCodes interCodes) {
     InterCode interCode = interCodes->code;
     int kind = interCode->kind;
@@ -220,10 +359,12 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
     } else if (kind == FUNCTION) {
         fprintf(fp, "\n%s:\n", interCode->u.sinOp.op->u.name);
 
+        // 新函数，寄存器重新变为可用，并清空变量表（因为假定没有全局变量）
         resetRegisters();
         clearVariableList(varTable->varListReg);
         clearVariableList(varTable->varListMem);
 
+        // main函数单独处理一下，在main里调用函数不算函数嵌套调用
         if (!strcmp(interCode->u.sinOp.op->u.name, "main")) {
             varTable->inFunc = false;
             varTable->funcName = NULL;
@@ -238,10 +379,11 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
             while (temp && temp->code->kind == PARAM) {
                 // 前4个参数存到a0 到a3中
                 if (argc < 4) {
-                    addVarible(varTable->varListReg, A0 + argc, temp->code->u.sinOp.op);
+                    addVarible(varTable->varListReg, A0 + argc,
+                               temp->code->u.sinOp.op);
                 } else {
                     // 剩下的要用栈存
-                    int regNo = getVarible(fp, temp->code->u.sinOp.op);
+                    int regNo = checkVarible(fp, temp->code->u.sinOp.op);
                     fprintf(
                         fp, "  lw %s, %d($fp)\n",
                         registers->regList[regNo]->name,
@@ -254,7 +396,7 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
     } else if (kind == GOTO) {
         fprintf(fp, "  j %s\n", interCode->u.sinOp.op->u.name);
     } else if (kind == RETURN) {
-        int RegNo = getVarible(fp, interCode->u.sinOp.op);
+        int RegNo = checkVarible(fp, interCode->u.sinOp.op);
         fprintf(fp, "  move $v0, %s\n", registers->regList[RegNo]->name);
         fprintf(fp, "  jr $ra\n");
     } else if (kind == ARG) {
@@ -267,10 +409,10 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         fprintf(fp, "  jal read\n");
         fprintf(fp, "  lw $ra, 0($sp)\n");
         fprintf(fp, "  addi $sp, $sp, 4\n");
-        int RegNo = getVarible(fp, interCode->u.sinOp.op);
+        int RegNo = checkVarible(fp, interCode->u.sinOp.op);
         fprintf(fp, "  move %s, $v0\n", registers->regList[RegNo]->name);
     } else if (kind == WRITE) {
-        int RegNo = getVarible(fp, interCode->u.sinOp.op);
+        int RegNo = checkVarible(fp, interCode->u.sinOp.op);
         if (varTable->inFunc == false) {
             fprintf(fp, "  move $a0, %s\n", registers->regList[RegNo]->name);
             fprintf(fp, "  addi $sp, $sp, -4\n");
@@ -290,35 +432,36 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
             fprintf(fp, "  addi $sp, $sp, 8\n");
         }
     } else if (kind == ASSIGN) {
-        int leftRegNo = getVarible(fp, interCode->u.assign.left);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
         // 右值为立即数，直接放左值寄存器里
         if (interCode->u.assign.right->kind == CONSTANT) {
             fprintf(fp, "  li %s, %d\n", registers->regList[leftRegNo]->name,
                     interCode->u.assign.right->u.val);
         }
-        // 右值为变量，先get再move赋值寄存器
+        // 右值为变量，先check再move赋值寄存器
         else {
-            int rightRegNo = getVarible(fp, interCode->u.assign.right);
+            int rightRegNo = checkVarible(fp, interCode->u.assign.right);
             fprintf(fp, "  move %s, %s\n", registers->regList[leftRegNo]->name,
                     registers->regList[rightRegNo]->name);
         }
     } else if (kind == GET_ADDR) {
-        int leftRegNo = getVarible(fp, interCode->u.assign.left);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
         fprintf(fp, "  la %s, %s\n", registers->regList[leftRegNo]->name,
                 interCode->u.assign.right->u.name);
     } else if (kind == READ_ADDR) {
-        int leftRegNo = getVarible(fp, interCode->u.assign.left);
-        int rightRegNo = getVarible(fp, interCode->u.assign.right);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
+        int rightRegNo = checkVarible(fp, interCode->u.assign.right);
         fprintf(fp, "  lw %s, 0(%s)\n", registers->regList[leftRegNo]->name,
                 registers->regList[rightRegNo]->name);
     } else if (kind == WRITE_ADDR) {
-        int leftRegNo = getVarible(fp, interCode->u.assign.left);
-        int rightRegNo = getVarible(fp, interCode->u.assign.right);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
+        int rightRegNo = checkVarible(fp, interCode->u.assign.right);
         fprintf(fp, "  sw %s, 0(%s)\n", registers->regList[rightRegNo]->name,
                 registers->regList[leftRegNo]->name);
     } else if (kind == CALL) {
-        TableItem callee = searchTableItem(interCode->u.assign.right->u.name);
-        int leftRegNo = getVarible(fp, interCode->u.assign.left);
+        TableItem calledFunc =
+            searchTableItem(interCode->u.assign.right->u.name);
+        int leftRegNo = checkVarible(fp, interCode->u.assign.left);
         // 函数调用前的准备
         fprintf(fp, "  addi $sp, $sp, -4\n");
         fprintf(fp, "  sw $ra, 0($sp)\n");
@@ -327,19 +470,20 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         // 如果是函数嵌套调用，把前形参存到内存，腾出a0-a3寄存器给新调用使用
         if (varTable->inFunc) {
             fprintf(fp, "  addi $sp, $sp, -%d\n",
-                    callee->fieldList->type->u.function.argc * 4);
-            TableItem caller = searchTableItem(varTable->funcName);
-            for (int i = 0; i < caller->fieldList->type->u.function.argc; i++) {
-                if (i > callee->fieldList->type->u.function.argc) break;
+                    calledFunc->fieldList->type->u.function.argc * 4);
+            TableItem curFunc = searchTableItem(varTable->funcName);
+            for (int i = 0; i < curFunc->fieldList->type->u.function.argc; i++) {
+                if (i > calledFunc->fieldList->type->u.function.argc) break;
                 if (i < 4) {
-                    fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[A0 + i]->name, i * 4);
+                    fprintf(fp, "  sw %s, %d($sp)\n",
+                            registers->regList[A0 + i]->name, i * 4);
                     Varible var = varTable->varListReg->head;
                     while (var && var->regNo != A0 + i) {
                         var = var->next;
                     }
                     delVarible(varTable->varListReg, var);
                     addVarible(varTable->varListMem, -1, var->op);
-                    int regNo = getVarible(fp, var->op);
+                    int regNo = checkVarible(fp, var->op);
                     fprintf(fp, "  move %s, %s\n",
                             registers->regList[regNo]->name,
                             registers->regList[A0 + i]->name);
@@ -350,9 +494,9 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         // 处理实参 ARG
         InterCodes arg = interCodes->prev;
         int argc = 0;
-        while (arg && argc < callee->fieldList->type->u.function.argc) {
+        while (arg && argc < calledFunc->fieldList->type->u.function.argc) {
             if (arg->code->kind == ARG) {
-                int argRegNo = getVarible(fp, arg->code->u.sinOp.op);
+                int argRegNo = checkVarible(fp, arg->code->u.sinOp.op);
                 // 前4个参数直接用寄存器存
                 if (argc < 4) {
                     fprintf(fp, "  move %s, %s\n",
@@ -378,15 +522,17 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         // 调用完后恢复栈指针、形参，然后恢复之前保存入栈的寄存器信息
         if (argc > 4) fprintf(fp, "  addi $sp, $sp, %d\n", 4 * argc);
         if (varTable->inFunc) {
-            TableItem caller = searchTableItem(varTable->funcName);
-            for (int i = 0; i < caller->fieldList->type->u.function.argc; i++) {
-                if (i > callee->fieldList->type->u.function.argc) break;
+            TableItem curFunc = searchTableItem(varTable->funcName);
+            for (int i = 0; i < curFunc->fieldList->type->u.function.argc; i++) {
+                if (i > calledFunc->fieldList->type->u.function.argc) break;
                 if (i < 4) {
-                    fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[A0 + i]->name, i * 4);
+                    fprintf(fp, "  lw %s, %d($sp)\n",
+                            registers->regList[A0 + i]->name, i * 4);
                     Varible var = varTable->varListReg->head;
                     while (var) {
                         if (var->op->kind != CONSTANT &&
-                            !strcmp(varTable->varListMem->head->op->u.name, var->op->u.name))
+                            !strcmp(varTable->varListMem->head->op->u.name,
+                                    var->op->u.name))
                             break;
                         var = var->next;
                     }
@@ -394,29 +540,33 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
                         registers->regList[var->regNo]->avail = true;
                         var->regNo = A0 + i;
                     } else {
-                        addVarible(varTable->varListReg, A0 + i, varTable->varListMem->head->op);
+                        addVarible(varTable->varListReg, A0 + i,
+                                   varTable->varListMem->head->op);
                     }
-                    delVarible(varTable->varListMem, varTable->varListMem->head);
+                    delVarible(varTable->varListMem,
+                               varTable->varListMem->head);
                 }
             }
-            fprintf(fp, "  addi $sp, $sp, %d\n", callee->fieldList->type->u.function.argc * 4);
+            fprintf(fp, "  addi $sp, $sp, %d\n",
+                    calledFunc->fieldList->type->u.function.argc * 4);
         }
         popa(fp);
         fprintf(fp, "  lw $ra, 0($sp)\n");
         fprintf(fp, "  addi $sp, $sp, 4\n");
         fprintf(fp, "  move %s, $v0\n", registers->regList[leftRegNo]->name);
     } else if (kind == ADD) {
-        int resultRegNo = getVarible(fp, interCode->u.binOp.result);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
         // 常数 常数
         if (interCode->u.binOp.op1->kind == CONSTANT &&
             interCode->u.binOp.op2->kind == CONSTANT) {
             fprintf(fp, "  li %s, %d\n", registers->regList[resultRegNo]->name,
-                    interCode->u.binOp.op1->u.val + interCode->u.binOp.op2->u.val);
+                    interCode->u.binOp.op1->u.val +
+                        interCode->u.binOp.op2->u.val);
         }
         // 变量 常数
         else if (interCode->u.binOp.op1->kind != CONSTANT &&
                  interCode->u.binOp.op2->kind == CONSTANT) {
-            int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
             fprintf(fp, "  addi %s, %s, %d\n",
                     registers->regList[resultRegNo]->name,
                     registers->regList[op1RegNo]->name,
@@ -424,25 +574,26 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         }
         // 变量 变量
         else {
-            int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
-            int op2RegNo = getVarible(fp, interCode->u.binOp.op2);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+            int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
             fprintf(fp, "  add %s, %s, %s\n",
                     registers->regList[resultRegNo]->name,
                     registers->regList[op1RegNo]->name,
                     registers->regList[op2RegNo]->name);
         }
     } else if (kind == SUB) {
-        int resultRegNo = getVarible(fp, interCode->u.binOp.result);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
         // 常数 常数
         if (interCode->u.binOp.op1->kind == CONSTANT &&
             interCode->u.binOp.op2->kind == CONSTANT) {
             fprintf(fp, "  li %s, %d\n", registers->regList[resultRegNo]->name,
-                    interCode->u.binOp.op1->u.val - interCode->u.binOp.op2->u.val);
+                    interCode->u.binOp.op1->u.val -
+                        interCode->u.binOp.op2->u.val);
         }
         // 变量 常数
         else if (interCode->u.binOp.op1->kind != CONSTANT &&
                  interCode->u.binOp.op2->kind == CONSTANT) {
-            int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
             fprintf(fp, "  addi %s, %s, %d\n",
                     registers->regList[resultRegNo]->name,
                     registers->regList[op1RegNo]->name,
@@ -450,24 +601,24 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         }
         // 变量 变量
         else {
-            int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
-            int op2RegNo = getVarible(fp, interCode->u.binOp.op2);
+            int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+            int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
             fprintf(fp, "  sub %s, %s, %s\n",
                     registers->regList[resultRegNo]->name,
                     registers->regList[op1RegNo]->name,
                     registers->regList[op2RegNo]->name);
         }
     } else if (kind == MUL) {
-        int resultRegNo = getVarible(fp, interCode->u.binOp.result);
-        int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
-        int op2RegNo = getVarible(fp, interCode->u.binOp.op2);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
+        int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+        int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
         fprintf(fp, "  mul %s, %s, %s\n", registers->regList[resultRegNo]->name,
                 registers->regList[op1RegNo]->name,
                 registers->regList[op2RegNo]->name);
     } else if (kind == DIV) {
-        int resultRegNo = getVarible(fp, interCode->u.binOp.result);
-        int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
-        int op2RegNo = getVarible(fp, interCode->u.binOp.op2);
+        int resultRegNo = checkVarible(fp, interCode->u.binOp.result);
+        int op1RegNo = checkVarible(fp, interCode->u.binOp.op1);
+        int op2RegNo = checkVarible(fp, interCode->u.binOp.op2);
         fprintf(fp, "  div %s, %s\n", registers->regList[op1RegNo]->name,
                 registers->regList[op2RegNo]->name);
         fprintf(fp, "  mflo %s\n", registers->regList[resultRegNo]->name);
@@ -475,8 +626,8 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         // init 时候添加到全局变量里了
     } else if (kind == IF_GOTO) {
         char* relopName = interCode->u.ifGoto.relop->u.name;
-        int xRegNo = getVarible(fp, interCode->u.ifGoto.x);
-        int yRegNo = getVarible(fp, interCode->u.ifGoto.y);
+        int xRegNo = checkVarible(fp, interCode->u.ifGoto.x);
+        int yRegNo = checkVarible(fp, interCode->u.ifGoto.y);
         if (!strcmp(relopName, "=="))
             fprintf(fp, "  beq %s, %s, %s\n", registers->regList[xRegNo]->name,
                     registers->regList[yRegNo]->name,

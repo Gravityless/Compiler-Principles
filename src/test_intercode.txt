@@ -1,14 +1,25 @@
-FUNCTION add :
-PARAM a
-PARAM b
-RETURN #0
+FUNCTION return2 :
+PARAM x1
+PARAM x2
+RETURN x2
+FUNCTION return1 :
+PARAM y1
+PARAM y2
+ARG y1
+ARG y2
+t1 := CALL return2
+RETURN t1
 FUNCTION main :
-ARG y
-ARG x
-t1 := CALL add
-z := t1
-ARG y
-ARG x
-t2 := CALL add
-z := t2
+a := #1
+b := #2
+ARG b
+ARG a
+t2 := CALL return2
+c := t2
+ARG b
+ARG a
+t3 := CALL return1
+d := t3
+WRITE c
+WRITE d
 RETURN #0
