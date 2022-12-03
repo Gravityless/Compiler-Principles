@@ -5,6 +5,10 @@
 
 #define REG_NUM 32
 
+// TODO: 调用者和被调用者寄存器保存和恢复
+// TODO: 寄存器溢出时将寄存器中的值保存在内存中
+// TODO: 寄存器分配算法，LRU？
+
 typedef struct Register_* Register;
 typedef struct Varible_* Varible;
 typedef struct Registers_* Registers;
@@ -20,16 +24,19 @@ struct Varible_ {
     int regNo;
     Operand op;
     Varible next;
+    bool inStack;
+    int stackDepth;                 // 变量溢出时相对fp的地址
 };
 
 struct Registers_ {
     Register regList[REG_NUM];
-    int lastUsed;
+    int clock;                      // 溢出变量时选择的寄存器编号
 };
 
 struct VariableList_ {
     Varible head;
     Varible cur;
+    int stackDepth;
 };
 
 struct VarTable_ {
@@ -60,7 +67,7 @@ extern VarTable varTable;
 Registers initRegisters();
 void resetRegisters();
 void deleteRegisters();
-int allocReg(Operand op);
+int getReg(FILE *fp, Operand op, Varible stackVar);
 Register newRegister(char* regName);
 
 VarTable newVarTable();
@@ -74,7 +81,9 @@ int getVarible(FILE* fp, Operand op);
 void genAssemblyCode(FILE* fp);
 void initAsm(FILE* fp);
 void Ir2Asm(FILE* fp, InterCodes interCodes);
-void pusha(FILE* fp);
-void popa(FILE* fp);
+void pusht(FILE* fp);
+void popt(FILE* fp);
+void pushs(FILE* fp);
+void pops(FILE* fp);
 
 #endif

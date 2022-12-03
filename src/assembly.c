@@ -8,20 +8,21 @@ char* REG_NAME[REG_NUM] = {
 Registers registers;
 VarTable varTable;
 
+
+Register newRegister(char* regName) {
+    Register p = (Register)malloc(sizeof(struct Register_));
+    p->avail = true;
+    p->name = regName;
+}
+
 Registers initRegisters() {
     Registers p = (Registers)malloc(sizeof(struct Registers_));
     for (int i = 0; i < REG_NUM; i++) {
         p->regList[i] = newRegister(REG_NAME[i]);
+        p->regList[i]->avail = false;
     }
-    p->regList[0]->avail = false;
-    p->lastUsed = 0;
+    p->clock = T0;
     return p;
-}
-
-void resetRegisters() {
-    for (int i = 1; i < REG_NUM; i++) {
-        registers->regList[i]->avail = true;
-    }
 }
 
 void deleteRegisters() {
@@ -29,6 +30,31 @@ void deleteRegisters() {
         free(registers->regList[i]);
     }
     free(registers);
+}
+
+void resetRegisters() {
+    for (int i = T0; i <= T9; i++) {
+        registers->regList[i]->avail = true;
+    }
+}
+
+VariableList newVariableList() {
+    VariableList p = (VariableList)malloc(sizeof(struct VariableList_));
+    p->head = NULL;
+    p->cur = NULL;
+    p->stackDepth = 0;
+    return p;
+}
+
+void clearVariableList(VariableList varList) {
+    Varible temp = varList->head;
+    while (temp) {
+        Varible p = temp;
+        temp = temp->next;
+        free(p);
+    }
+    varList->head = NULL;
+    varList->cur = NULL;
 }
 
 VarTable newVarTable() {
@@ -48,11 +74,13 @@ void deleteVarTable() {
     free(varTable);
 }
 
-VariableList newVariableList() {
-    VariableList p = (VariableList)malloc(sizeof(struct VariableList_));
-    p->head = NULL;
-    p->cur = NULL;
-    return p;
+Varible newVarible(int regNo, Operand op) {
+    Varible p = (Varible)malloc(sizeof(struct Varible_));
+    p->regNo = regNo;
+    p->op = op;
+    p->next = NULL;
+    p->stackDepth = 0;
+    p->inStack = false;
 }
 
 void addVarible(VariableList varList, int regNo, Operand op) {
@@ -81,87 +109,99 @@ void delVarible(VariableList varList, Varible var) {
     }
 }
 
-void clearVariableList(VariableList varList) {
-    Varible temp = varList->head;
-    while (temp) {
-        Varible p = temp;
-        temp = temp->next;
-        free(p);
-    }
-    varList->head = NULL;
-    varList->cur = NULL;
-}
-
 int getVarible(FILE* fp, Operand op) {
     if (op->kind != CONSTANT) {
-        // 若为变量，先看变量表里有没有，有就返回，没有新分配一个
         Varible temp = varTable->varListReg->head;
         while (temp) {
             if (temp->op->kind != CONSTANT && !strcmp(temp->op->u.name, op->u.name))
-                return temp->regNo;
+                if (temp->inStack)
+                    return getReg(fp, op, temp);
+                else
+                    return temp->regNo;
             temp = temp->next;
         }
-        int regNo = allocReg(op);
+        int regNo = getReg(fp, op, NULL);
         return regNo;
     } else {
-        // 立即数则找个寄存器放进去, 如果为0直接返回0号寄存器
         if (op->u.val == 0) return ZERO;
-        int regNo = allocReg(op);
+        int regNo = getReg(fp, op, NULL);
         fprintf(fp, "  li %s, %d\n", registers->regList[regNo]->name, op->u.val);
         return regNo;
     }
 }
 
-int allocReg(Operand op) {
-    // 先看有无空闲，有就直接放
-    for (int i = T0; i <= T9; i++) {
-        if (registers->regList[i]->avail) {
-            registers->regList[i]->avail = 0;
-            addVarible(varTable->varListReg, i, op);
-            return i;
+int getReg(FILE *fp, Operand op, Varible stackVar) {
+    if (stackVar == NULL) {
+        // 检查空闲寄存器
+        for (int i = T0; i <= T9; i++) {
+            if (registers->regList[i]->avail) {
+                registers->regList[i]->avail = false;
+                addVarible(varTable->varListReg, i, op);
+                return i;
+            }
         }
-    }
-    // 无空闲了，需要找一个寄存器释放掉
-    // 可以先释放掉最近没用过的立即数
-    Varible temp = varTable->varListReg->head;
-    while (temp) {
-        if (temp->op->kind == CONSTANT && temp->regNo != registers->lastUsed) {
-            int regNo = temp->regNo;
-            registers->lastUsed = regNo;
-            delVarible(varTable->varListReg, temp);
-            addVarible(varTable->varListReg, regNo, op);
-            return regNo;
-        }
-        temp = temp->next;
-    }
-
-    // 如果没有立即数，就找一个最近没用过的临时变量的释放掉
-    temp = varTable->varListReg->head;
-    while (temp) {
-        if (temp->op->kind != CONSTANT) {
-            if (temp->op->u.name[0] == 't' && temp->regNo != registers->lastUsed) {
+        // 无空闲寄存器，先考虑释放立即数
+        Varible temp = varTable->varListReg->head;
+        while (temp) {
+            if (temp->op->kind == CONSTANT && (temp->regNo >= T0 && temp->regNo <= T9)) {
                 int regNo = temp->regNo;
-                registers->lastUsed = regNo;
                 delVarible(varTable->varListReg, temp);
                 addVarible(varTable->varListReg, regNo, op);
                 return regNo;
             }
+            temp = temp->next;
         }
-        temp = temp->next;
+
+        // 无立即数，按CLOCK算法将溢出变量入栈并释放
+        int regNo = registers->clock;
+        temp = varTable->varListReg->head;
+        while (temp->regNo != regNo) temp = temp->next;
+        fprintf(fp, "  addi $sp, $sp, -4\n");
+        fprintf(fp, "  sw %s, $sp\n", registers->regList[regNo]->name);
+        temp->inStack = true;
+        registers->clock = (registers->clock + 1) % (T9 - T0 + 1) + T0;
+        varTable->varListMem->stackDepth += 4;
+        temp->stackDepth = varTable->varListMem->stackDepth;
+        addVarible(varTable->varListReg, regNo, op);
+        return regNo;
+    } else {
+        // 检查空闲寄存器
+        for (int i = T0; i <= T9; i++) {
+            if (registers->regList[i]->avail) {
+                registers->regList[i]->avail = false;
+                stackVar->inStack = false;
+                fprintf(fp, "  lw %s, -%d($fp)\n", registers->regList[i]->name, stackVar->stackDepth);
+                return i;
+            }
+        }
+        // 无空闲寄存器，先考虑释放立即数
+        Varible temp = varTable->varListReg->head;
+        while (temp) {
+            if (temp->op->kind == CONSTANT && (temp->regNo >= T0 && temp->regNo <= T9)) {
+                int regNo = temp->regNo;
+                delVarible(varTable->varListReg, temp);
+                stackVar->inStack = false;
+                fprintf(fp, "  lw %s, -%d($fp)\n", registers->regList[regNo]->name, stackVar->stackDepth);
+                return regNo;
+            }
+            temp = temp->next;
+        }
+
+        // 无立即数，按CLOCK算法将溢出变量入栈并释放
+        int regNo = registers->clock;
+        temp = varTable->varListReg->head;
+        while (temp->regNo != regNo) temp = temp->next;
+        fprintf(fp, "  addi $sp, $sp, -4\n");
+        fprintf(fp, "  sw %s, $sp\n", registers->regList[regNo]->name);
+        temp->stackDepth =        
+        temp->inStack = true;
+        registers->clock = (registers->clock + 1) % (T9 - T0 + 1) + T0;
+        varTable->varListMem->stackDepth += 4;
+        temp->stackDepth = varTable->varListMem->stackDepth;
+        stackVar->inStack = false;
+        fprintf(fp, "  lw %s, -%d($fp)\n", registers->regList[regNo]->name, stackVar->stackDepth);
+        return regNo;   
     }
-}
-
-Register newRegister(char* regName) {
-    Register p = (Register)malloc(sizeof(struct Register_));
-    p->avail = true;
-    p->name = regName;
-}
-
-Varible newVarible(int regNo, Operand op) {
-    Varible p = (Varible)malloc(sizeof(struct Varible_));
-    p->regNo = regNo;
-    p->op = op;
-    p->next = NULL;
 }
 
 void genAssemblyCode(FILE* fp) {
@@ -219,8 +259,12 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         fprintf(fp, "%s:\n", interCode->u.sinOp.op->u.name);
     } else if (kind == FUNCTION) {
         fprintf(fp, "\n%s:\n", interCode->u.sinOp.op->u.name);
-
+        
         resetRegisters();
+        // VariableList oldRegVar = varTable->varListReg;
+        // VariableList oldMemVar = varTable->varListMem;
+        // varTable->varListReg = newVariableList();
+        // varTable->varListMem = newVariableList();
         clearVariableList(varTable->varListReg);
         clearVariableList(varTable->varListMem);
 
@@ -228,6 +272,11 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
             varTable->inFunc = false;
             varTable->funcName = NULL;
         } else {
+            fprintf(fp, "  addi $sp, $sp, -4\n");
+            fprintf(fp, "  sw $fp, 0($sp)\n");
+            fprintf(fp, "  move $fp, $sp\n");
+            pushs(fp);
+            varTable->varListMem->stackDepth = 0;
             varTable->inFunc = true;
             varTable->funcName = interCode->u.sinOp.op->u.name;
 
@@ -242,10 +291,8 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
                 } else {
                     // 剩下的要用栈存
                     int regNo = getVarible(fp, temp->code->u.sinOp.op);
-                    fprintf(
-                        fp, "  lw %s, %d($fp)\n",
-                        registers->regList[regNo]->name,
-                        (item->fieldList->type->u.function.argc - 1 - argc) * 4);
+                    fprintf(fp, "  lw %s, %d($fp)\n", registers->regList[regNo]->name,
+                        (item->fieldList->type->u.function.argc - argc) * 4 + 36);
                 }
                 argc++;
                 temp = temp->next;
@@ -254,6 +301,13 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
     } else if (kind == GOTO) {
         fprintf(fp, "  j %s\n", interCode->u.sinOp.op->u.name);
     } else if (kind == RETURN) {
+        if (varTable->inFunc) {
+            fprintf(fp, "  move $sp, $fp\n");
+            fprintf(fp, "  addi $sp, $sp, -32\n");
+            pops(fp);
+            fprintf(fp, "  lw $fp, 0($sp)\n");
+            fprintf(fp, "  addi $sp, $sp, 4\n");
+        }
         int RegNo = getVarible(fp, interCode->u.sinOp.op);
         fprintf(fp, "  move $v0, %s\n", registers->regList[RegNo]->name);
         fprintf(fp, "  jr $ra\n");
@@ -319,34 +373,20 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
     } else if (kind == CALL) {
         TableItem callee = searchTableItem(interCode->u.assign.right->u.name);
         int leftRegNo = getVarible(fp, interCode->u.assign.left);
-        // 函数调用前的准备
-        fprintf(fp, "  addi $sp, $sp, -4\n");
-        fprintf(fp, "  sw $ra, 0($sp)\n");
-        pusha(fp);
+        
+        // 调用者保存寄存器入栈
+        pusht(fp);
 
-        // 如果是函数嵌套调用，把前形参存到内存，腾出a0-a3寄存器给新调用使用
+        // 如果是函数嵌套调用，返回地址入栈，形参入栈
         if (varTable->inFunc) {
-            fprintf(fp, "  addi $sp, $sp, -%d\n",
-                    callee->fieldList->type->u.function.argc * 4);
-            TableItem caller = searchTableItem(varTable->funcName);
-            for (int i = 0; i < caller->fieldList->type->u.function.argc; i++) {
-                if (i > callee->fieldList->type->u.function.argc) break;
-                if (i < 4) {
-                    fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[A0 + i]->name, i * 4);
-                    Varible var = varTable->varListReg->head;
-                    while (var && var->regNo != A0 + i) {
-                        var = var->next;
-                    }
-                    delVarible(varTable->varListReg, var);
-                    addVarible(varTable->varListMem, -1, var->op);
-                    int regNo = getVarible(fp, var->op);
-                    fprintf(fp, "  move %s, %s\n",
-                            registers->regList[regNo]->name,
-                            registers->regList[A0 + i]->name);
-                }
+            fprintf(fp, "  addi $sp, $sp, -4\n");
+            fprintf(fp, "  sw $ra, 0($sp)\n");
+            fprintf(fp, "  addi $sp, $sp, -%d\n", 4 * 4);
+            for (int i = 0; i < 4; i++) {
+                fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[A0 + i]->name, i * 4); 
             }
+            varTable->varListMem->stackDepth += 4 + 4 * 4;
         }
-
         // 处理实参 ARG
         InterCodes arg = interCodes->prev;
         int argc = 0;
@@ -363,48 +403,34 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
                 // 4个以后的参数压栈
                 else {
                     fprintf(fp, "  addi $sp, $sp, -4\n");
-                    fprintf(fp, "  sw %s, 0($sp)\n",
-                            registers->regList[argRegNo]->name);
-                    fprintf(fp, "  move $fp, $sp\n");
+                    fprintf(fp, "  sw %s, 0($sp)\n", registers->regList[argRegNo]->name);
                     argc++;
+                    varTable->varListMem->stackDepth += 4;
                 }
             }
             arg = arg->prev;
         }
-
         // 函数调用
         fprintf(fp, "  jal %s\n", interCode->u.assign.right->u.name);
 
         // 调用完后恢复栈指针、形参，然后恢复之前保存入栈的寄存器信息
-        if (argc > 4) fprintf(fp, "  addi $sp, $sp, %d\n", 4 * argc);
-        if (varTable->inFunc) {
-            TableItem caller = searchTableItem(varTable->funcName);
-            for (int i = 0; i < caller->fieldList->type->u.function.argc; i++) {
-                if (i > callee->fieldList->type->u.function.argc) break;
-                if (i < 4) {
-                    fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[A0 + i]->name, i * 4);
-                    Varible var = varTable->varListReg->head;
-                    while (var) {
-                        if (var->op->kind != CONSTANT &&
-                            !strcmp(varTable->varListMem->head->op->u.name, var->op->u.name))
-                            break;
-                        var = var->next;
-                    }
-                    if (var) {
-                        registers->regList[var->regNo]->avail = true;
-                        var->regNo = A0 + i;
-                    } else {
-                        addVarible(varTable->varListReg, A0 + i, varTable->varListMem->head->op);
-                    }
-                    delVarible(varTable->varListMem, varTable->varListMem->head);
-                }
-            }
-            fprintf(fp, "  addi $sp, $sp, %d\n", callee->fieldList->type->u.function.argc * 4);
+        if (argc > 4) {
+            fprintf(fp, "  addi $sp, $sp, %d\n", 4 * (argc - 4));
+            varTable->varListMem->stackDepth -= 4 * (argc - 4);
         }
-        popa(fp);
+        if (varTable->inFunc) {
+            for (int i = 0; i < 4; i++) {
+                fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[A0 + i]->name, i * 4);
+            }
+            fprintf(fp, "  addi $sp, $sp, %d\n", 4 * 4);  
+            varTable->varListMem->stackDepth -= 4 * 4;
+        }
+
         fprintf(fp, "  lw $ra, 0($sp)\n");
         fprintf(fp, "  addi $sp, $sp, 4\n");
         fprintf(fp, "  move %s, $v0\n", registers->regList[leftRegNo]->name);
+        varTable->varListMem->stackDepth -= 4;
+        popt(fp);
     } else if (kind == ADD) {
         int resultRegNo = getVarible(fp, interCode->u.binOp.result);
         // 常数 常数
@@ -417,8 +443,7 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         else if (interCode->u.binOp.op1->kind != CONSTANT &&
                  interCode->u.binOp.op2->kind == CONSTANT) {
             int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
-            fprintf(fp, "  addi %s, %s, %d\n",
-                    registers->regList[resultRegNo]->name,
+            fprintf(fp, "  addi %s, %s, %d\n", registers->regList[resultRegNo]->name,
                     registers->regList[op1RegNo]->name,
                     interCode->u.binOp.op2->u.val);
         }
@@ -443,8 +468,7 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
         else if (interCode->u.binOp.op1->kind != CONSTANT &&
                  interCode->u.binOp.op2->kind == CONSTANT) {
             int op1RegNo = getVarible(fp, interCode->u.binOp.op1);
-            fprintf(fp, "  addi %s, %s, %d\n",
-                    registers->regList[resultRegNo]->name,
+            fprintf(fp, "  addi %s, %s, %d\n", registers->regList[resultRegNo]->name,
                     registers->regList[op1RegNo]->name,
                     -interCode->u.binOp.op2->u.val);
         }
@@ -504,18 +528,40 @@ void Ir2Asm(FILE* fp, InterCodes interCodes) {
     }
 }
 
-void pusha(FILE* fp) {
-    fprintf(fp, "  addi $sp, $sp, -72\n");
-    for (int i = T0; i <= T9; i++) {
-        fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[i]->name,
-                (i - T0) * 4);
+void pusht(FILE* fp) {
+    fprintf(fp, "  addi $sp, $sp, -40\n");
+    for (int i = T0; i <= T7; i++) {
+        fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[i]->name, (i - T0) * 4);
     }
+    for (int i = T8; i <= T9; i++) {
+        fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[i]->name, (i - T0 - 8) * 4);
+    }
+    varTable->varListMem->stackDepth += 40;
 }
 
-void popa(FILE* fp) {
-    for (int i = T0; i <= T9; i++) {
-        fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[i]->name,
-                (i - T0) * 4);
+void popt(FILE* fp) {
+    for (int i = T0; i <= T7; i++) {
+        fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[i]->name, (i - T0) * 4);
     }
-    fprintf(fp, "  addi $sp, $sp, 72\n");
+    for (int i = T8; i <= T9; i++) {
+        fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[i]->name, (i - T0 - 8) * 4);
+    }
+    fprintf(fp, "  addi $sp, $sp, 40\n");
+    varTable->varListMem->stackDepth -= 4;
+}
+
+void pushs(FILE* fp) {
+    fprintf(fp, "  addi $sp, $sp, -32\n");
+    for (int i = S0; i <= S7; i++) {
+        fprintf(fp, "  sw %s, %d($sp)\n", registers->regList[i]->name, (i - S0) * 4);
+    }
+    varTable->varListMem->stackDepth += 32;
+}
+
+void pops(FILE* fp) {
+    for (int i = S0; i <= S7; i++) {
+        fprintf(fp, "  lw %s, %d($sp)\n", registers->regList[i]->name, (i - S0) * 4);
+    }
+    fprintf(fp, "  addi $sp, $sp, 32\n");
+    varTable->varListMem->stackDepth -= 32;
 }

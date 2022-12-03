@@ -2,24 +2,12 @@ FUNCTION return2 :
 PARAM x1
 PARAM x2
 RETURN x2
-FUNCTION return1 :
-PARAM y1
-PARAM y2
-ARG y1
-ARG y2
-t1 := CALL return2
-RETURN t1
 FUNCTION main :
 a := #1
 b := #2
 ARG b
 ARG a
-t2 := CALL return2
-c := t2
-ARG b
-ARG a
-t3 := CALL return1
-d := t3
+t1 := CALL return2
+c := t1
 WRITE c
-WRITE d
 RETURN #0
