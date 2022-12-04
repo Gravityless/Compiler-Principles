@@ -24,7 +24,7 @@ struct Varible_ {
     int regNo;
     Operand op;
     Varible next;
-    bool inStack;
+    bool inStack;                   // 变量在寄存器还是在栈中
     int stackDepth;                 // 变量溢出时相对fp的地址
 };
 
@@ -36,14 +36,13 @@ struct Registers_ {
 struct VariableList_ {
     Varible head;
     Varible cur;
-    int stackDepth;
 };
 
 struct VarTable_ {
     VariableList varListReg;            // 寄存器中的变量
-    VariableList varListMem;            // 内存中的变量
     bool inFunc;
     char* funcName;
+    int stackDepth;                     // 栈的深度
 };
 
 typedef enum _regNo {
