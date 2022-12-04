@@ -31,6 +31,7 @@ struct Varible_ {
 struct Registers_ {
     Register regList[REG_NUM];
     int clock;                      // 溢出变量时选择的寄存器编号
+    int lastUsed;
 };
 
 struct VariableList_ {
@@ -39,10 +40,11 @@ struct VariableList_ {
 };
 
 struct VarTable_ {
-    VariableList varListReg;            // 寄存器中的变量
+    VariableList varListReg;            // 寄存器变量
     bool inFunc;
     char* funcName;
     int stackDepth;                     // 栈的深度
+    VariableList varListMem;
 };
 
 typedef enum _regNo {
@@ -84,5 +86,7 @@ void pusht(FILE* fp);
 void popt(FILE* fp);
 void pushs(FILE* fp);
 void pops(FILE* fp);
+void pusha(FILE* fp);
+void popa(FILE* fp);
 
 #endif

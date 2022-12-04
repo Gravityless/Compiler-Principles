@@ -32,9 +32,9 @@ int main(int argc, char** argv) {
         
         // printf("start generating intercodes\n");
         // intercodeGenerate(root, output);
-        FILE *irOut = fopen("./test_intercode.txt", "w+");
-        intercodeGenerate(root, irOut);
-        // intercodeGenerate(root, NULL);
+        // FILE *irOut = fopen("./test_intercode.txt", "w+");
+        // intercodeGenerate(root, irOut);
+        intercodeGenerate(root, NULL);
 
         // printf("start assemblying\n");
         genAssemblyCode(output);
